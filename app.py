@@ -251,7 +251,7 @@ def main():
                         t1, t2 = st.tabs([T["original_image"], T["processed_image"]])
                         with t1: st.image(image, use_container_width=True)
                         with t2: st.image(detected_img, channels="BGR", use_container_width=True, 
-                                          caption=f"Detected {len(faces)} faces")
+                                          caption=f"Detected {len(faces)} face(s)")
                 except Exception as e:
                     st.error(f"{T['error_processing']}: {e}")
 
