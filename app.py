@@ -6,7 +6,6 @@ import pandas as pd
 from datetime import datetime
 import random
 import logging
-from geopy.geocoders import Nominatim
 import os
 from io import BytesIO
 
@@ -23,12 +22,12 @@ logger = logging.getLogger(__name__)
 
 # ----------------- 多语言支持 -----------------
 LANGUAGES = ["中文", "English", "Malay"]
-lang = st.sidebar.selectbox("🌐 🌐Select Language / 选择语言 / Pilih Bahasa", LANGUAGES)
+lang = st.sidebar.selectbox("🌐 Select Language / 选择语言 / Pilih Bahasa", LANGUAGES)
 
 TRANSLATIONS = {
     "中文": {
         "title": "AI情绪与位置检测系统",
-        "upload_guide": "上传照片分析面部表情并推测位置（带GPS或地标）",
+        "upload_guide": "上传照片分析面部表情并推测位置",
         "username": "用户名",
         "user_auth": "用户认证",  # 新增
         "enter_username": "输入用户名",
@@ -47,7 +46,7 @@ TRANSLATIONS = {
     },
     "English": {
         "title": "AI Emotion & Location Detector",
-        "upload_guide": "Upload a photo to analyze facial expressions and estimate location (via GPS or landmark)",
+        "upload_guide": "Upload a photo to analyze facial expressions and estimate location",
         "username": "Username",
         "user_auth": "User Authentication",  # 新增
         "enter_username": "Enter your username",
@@ -66,7 +65,7 @@ TRANSLATIONS = {
     },
     "Malay": {
         "title": "Sistem Pengesanan Emosi & Lokasi AI",
-        "upload_guide": "Muat naik foto untuk analisis ekspresi muka dan anggaran lokasi (GPS atau mercu tanda)",
+        "upload_guide": "Muat naik foto untuk analisis ekspresi muka dan anggaran lokasi",
         "username": "Nama pengguna",
         "user_auth": "Pengesahan Pengguna",  # 新增
         "enter_username": "Masukkan nama pengguna",
@@ -90,15 +89,15 @@ T = TRANSLATIONS[lang]
 @st.cache_resource
 def load_face_cascade():
     try:
-        # 显式指定模型路径
-        model_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
+        # 使用OpenCV自带的模型路径
+        model_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found at {model_path}")
-            
+        
         cascade = cv2.CascadeClassifier(model_path)
         if cascade.empty():
             raise ValueError("Failed to load cascade classifier")
-            
+        
         return cascade
     except Exception as e:
         logger.error(f"模型加载失败: {e}")
@@ -110,7 +109,7 @@ def detect_faces(img_cv, face_cascade):
     try:
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-        return faces if isinstance(faces, np.ndarray) else np.array([])
+        return faces if faces is not None else np.array([])
     except Exception as e:
         logger.error(f"人脸检测错误: {e}")
         return np.array([])
@@ -118,32 +117,22 @@ def detect_faces(img_cv, face_cascade):
 def analyze_emotion(faces):
     return ["happy" if random.random() > 0.5 else "neutral" for _ in faces]
 
-def extract_gps_location(img):
-    try:
-        exif = img._getexif()
-        if not exif:
-            return None
-        gps_info = exif.get(34853)
-        if not gps_info:
-            return None
-
-        def convert_to_degrees(value):
-            d, m, s = value
-            return d[0] / d[1] + m[0] / m[1] / 60 + s[0] / s[1] / 3600
-
-        lat = convert_to_degrees(gps_info[2])
-        if gps_info[1] == 'S':
-            lat = -lat
-        lon = convert_to_degrees(gps_info[4])
-        if gps_info[3] == 'W':
-            lon = -lon
-
-        geolocator = Nominatim(user_agent="emotion_location_app")
-        location = geolocator.reverse((lat, lon), language='en')
-        return location.address if location else None
-    except Exception as e:
-        logger.warning(f"GPS读取失败: {e}")
-        return None
+def draw_detections(img, faces, emotions):
+    """绘制检测框和情绪标签"""
+    img_copy = img.copy()
+    color_map = {
+        "happy": (0, 255, 0),    # 绿色
+        "neutral": (255, 255, 0), # 黄色
+        "sad": (0, 0, 255),       # 红色
+        "angry": (0, 165, 255)    # 橙色
+    }
+    
+    for i, ((x, y, w, h), emotion) in enumerate(zip(faces, emotions)):
+        color = color_map.get(emotion, (255, 255, 255))
+        cv2.rectangle(img_copy, (x, y), (x+w, y+h), color, 2)
+        cv2.putText(img_copy, emotion, (x, y-10), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+    return img_copy
 
 def save_to_history(username, emotion, location):
     try:
@@ -153,7 +142,14 @@ def save_to_history(username, emotion, location):
             "location": location,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }])
-        new_record.to_csv("history.csv", mode='a', index=False, header=not os.path.exists("history.csv"))
+        
+        if os.path.exists("history.csv"):
+            history = pd.read_csv("history.csv")
+            history = pd.concat([history, new_record])
+        else:
+            history = new_record
+            
+        history.to_csv("history.csv", index=False)
     except Exception as e:
         logger.error(f"保存历史记录失败: {e}")
 
@@ -174,24 +170,32 @@ def show_analysis_results(uploaded_file, username, face_cascade):
                 return
 
             emotions = analyze_emotion(faces)
-            location = extract_gps_location(img) or "Unknown"
+            location = "Unknown"  # 简化版，不使用geopy
 
             st.metric(T["detected_emotion"], ", ".join(emotions))
             st.metric(T["estimated_location"], location)
 
             save_to_history(username, emotions[0], location)
 
-            csv_data = pd.DataFrame({"Emotion": emotions, "Location": [location]*len(emotions)}).to_csv(index=False)
-            st.download_button(label=T["download_results"], data=csv_data, file_name="analysis_results.csv")
+            csv_data = pd.DataFrame({
+                "Emotion": emotions,
+                "Location": [location]*len(emotions)
+            }).to_csv(index=False)
+            
+            st.download_button(
+                label=T["download_results"],
+                data=csv_data,
+                file_name="analysis_results.csv"
+            )
 
         with col2:
             tab1, tab2 = st.tabs([T["original_image"], T["processed_image"]])
             with tab1:
                 st.image(img, use_column_width=True)
             with tab2:
-                for (x, y, w, h) in faces:
-                    cv2.rectangle(img_cv, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                st.image(img_cv, channels="BGR", use_column_width=True)
+                detected_img = draw_detections(img_cv, faces, emotions)
+                st.image(detected_img, channels="BGR", use_column_width=True,
+                        caption=f"{len(faces)} {T['faces_detected']}")
     except Exception as e:
         logger.error(f"分析错误: {e}")
         st.error(T["error_processing"])
@@ -209,7 +213,7 @@ def main():
         st.session_state.username = ""
 
     with st.sidebar:
-        st.subheader(T["user_auth"])  # 现在这个键已存在
+        st.subheader(T["user_auth"])
         username = st.text_input(T["enter_username"], key="username_input")
         if username:
             st.session_state.username = username
