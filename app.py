@@ -152,28 +152,79 @@ if None in (face_cascade, eye_cascade, smile_cascade):
     st.stop()  # 如果模型加载失败，停止应用
 
 # ----------------- 核心功能 -----------------
+# ----------------- 核心功能 ----------------- 
 def detect_emotion(img):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-    emotions = []
-    for (x,y,w,h) in faces:
-        roi_gray = gray[y:y+h, x:x+w]
-        smiles = smile_cascade.detectMultiScale(roi_gray, scaleFactor=1.8, minNeighbors=20)
-        eyes = eye_cascade.detectMultiScale(roi_gray)
-        emotion = "neutral"
-        if len(eyes) >= 2:
-            eye_sizes = [eh for (_,ey,_,eh) in eyes[:2]]
-            avg_eye_size = np.mean(eye_sizes)
-            eye_centers = [ey + eh/2 for (_,ey,_,eh) in eyes[:2]]
-            avg_eye_height = np.mean(eye_centers)
-            if avg_eye_size > h/5 and avg_eye_height < h/2.5:
-                emotion = "angry"
-            elif avg_eye_height < h/3:
-                emotion = "sad"
-        if len(smiles) > 0:
-            emotion = "happy"
-        emotions.append(emotion)
-    return emotions, faces
+    """改进的情绪检测函数，添加了更多错误处理"""
+    try:
+        # 验证输入图像
+        if img is None or len(img.shape) != 3:
+            raise ValueError("无效的图像输入")
+            
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # 检测人脸（调整参数提高准确性）
+        faces = face_cascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(30, 30),
+            flags=cv2.CASCADE_SCALE_IMAGE
+        )
+        
+        emotions = []
+        valid_faces = []
+        
+        for (x, y, w, h) in faces:
+            try:
+                roi_gray = gray[y:y+h, x:x+w]
+                
+                # 检测微笑（调整参数减少误检）
+                smiles = smile_cascade.detectMultiScale(
+                    roi_gray,
+                    scaleFactor=1.8,
+                    minNeighbors=20,
+                    minSize=(25, 25)
+                )
+                
+                # 检测眼睛
+                eyes = eye_cascade.detectMultiScale(
+                    roi_gray,
+                    scaleFactor=1.1,
+                    minNeighbors=5,
+                    minSize=(20, 20)
+                )
+                
+                # 情绪判断逻辑
+                emotion = "neutral"
+                
+                if len(eyes) >= 2:
+                    eye_centers = [y + ey + eh/2 for (ex, ey, ew, eh) in eyes[:2]]
+                    avg_eye_height = np.mean(eye_centers)
+                    eye_sizes = [eh for (ex, ey, ew, eh) in eyes[:2]]
+                    avg_eye_size = np.mean(eye_sizes)
+                    
+                    # 调整判断阈值
+                    if avg_eye_size > h/4.5 and avg_eye_height < h/2.3:
+                        emotion = "angry"
+                    elif avg_eye_height < h/2.8:
+                        emotion = "sad"
+                
+                # 微笑检测优先
+                if len(smiles) > 0:
+                    emotion = "happy"
+                
+                emotions.append(emotion)
+                valid_faces.append((x, y, w, h))
+                
+            except Exception as e:
+                logger.error(f"单个人脸处理错误: {str(e)}")
+                continue
+                
+        return emotions, np.array(valid_faces)
+        
+    except Exception as e:
+        logger.error(f"情绪检测失败: {str(e)}")
+        return [], np.array([])
 
 def draw_detections(img, emotions, faces):
     """Draw detection boxes with English labels"""
