@@ -190,7 +190,7 @@ def main():
                             st.image(image, use_container_width=True)
                         with t2: 
                             st.image(detected_img, channels="BGR", use_container_width=True,
-                                    caption=f"Detected {len(detections)} faces")
+                                    caption=f"Detected {len(detections)} face(s)")
                 
                 except Exception as e:
                     st.error(f"{T['error_processing']}: {e}")
