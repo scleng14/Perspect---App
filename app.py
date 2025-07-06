@@ -1,4 +1,4 @@
-可以帮我修改一些bug吗？另外可以跟我说下history.csv是在哪里吗？我没看见呢？# ai_emotion_location_app.py (debugged version)
+# ai_emotion_location_app.py (debugged version)
 
 import streamlit as st
 import cv2
