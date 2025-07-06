@@ -121,12 +121,35 @@ T = TRANSLATIONS[lang]
 # ----------------- 加载模型 -----------------
 @st.cache_resource
 def load_models():
-    face = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    eye = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
-    smile = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_smile.xml')
-    return face, eye, smile
+    try:
+        # 确保模型文件存在
+        if not os.path.exists(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'):
+            raise FileNotFoundError("Face cascade model not found")
+            
+        face = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        eye = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml') 
+        smile = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_smile.xml')
+        
+        # 验证模型加载是否成功
+        if face.empty() or eye.empty() or smile.empty():
+            raise ValueError("Failed to load one or more cascade classifiers")
+            
+        return face, eye, smile
+    except Exception as e:
+        st.error(f"模型加载失败: {str(e)}")
+        return None, None, None
 
+# 初始化历史记录文件（添加异常处理）
+try:
+    if not os.path.exists('history.csv'):
+        pd.DataFrame(columns=["Username","Emotion","Location","timestamp"]).to_csv('history.csv', index=False)
+except Exception as e:
+    st.error(f"无法初始化历史记录文件: {str(e)}")
+
+# 加载模型（添加检查）
 face_cascade, eye_cascade, smile_cascade = load_models()
+if None in (face_cascade, eye_cascade, smile_cascade):
+    st.stop()  # 如果模型加载失败，停止应用
 
 # ----------------- 核心功能 -----------------
 def detect_emotion(img):
@@ -206,16 +229,22 @@ def show_detection_guide(show_full_guide=True):
             - Avoid obstructed faces
             """)
 
-def save_history(username, emotion, location):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    df = pd.DataFrame([[username, emotion, location, now]], columns=["Username","Emotion","Location","timestamp"])
+def save_history(username, emotion, location="Unknown"):
     try:
-        if os.path.exists("history.csv"):
-            prev = pd.read_csv("history.csv")
-            df = pd.concat([prev, df])
-        df.to_csv("history.csv", index=False)
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        new_record = pd.DataFrame([[username, emotion, location, now]], 
+                                columns=["Username","Emotion","Location","timestamp"])
+        
+        if os.path.exists('history.csv'):
+            history_df = pd.read_csv('history.csv')
+            history_df = pd.concat([history_df, new_record])
+        else:
+            history_df = new_record
+            
+        history_df.to_csv('history.csv', index=False)
     except Exception as e:
-        logger.error(f"Save failed: {e}")
+        logger.error(f"保存历史记录失败: {e}")
+        st.error("Failed to save history")
 
 # ----------------- 主程序 -----------------
 def main():
@@ -263,16 +292,16 @@ def main():
         st.header(f"📜 {T['upload_history']}")
         if username:
             try:
-                df = pd.read_csv("history.csv")
-                if df.empty:
-                    st.info(T['no_history'])
+                if os.path.exists("history.csv"):
+                    history_df = pd.read_csv("history.csv")
+                    if not history_df.empty:
+                        st.dataframe(history_df)
+                    else:
+                        st.info(T['no_history'])
                 else:
-                    keyword = st.text_input(T['filter_user']).strip()
-                    df_filtered = df[df["Username"].str.contains(keyword, case=False)] if keyword else df
-                    st.dataframe(df_filtered)
-                    st.caption(f"{len(df_filtered)} {T['records_shown']}")
-            except:
-                st.info(T['no_record_found'])
+                    st.info(T['no_record_found'])
+            except Exception as e:
+                st.error(f"读取历史记录错误: {e}")
         else:
             st.warning(T['enter_username_history'])
 
