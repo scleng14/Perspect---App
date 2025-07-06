@@ -2,14 +2,14 @@
 import streamlit as st
 import random
 import pandas as pd
-import plotly.express as px
+import matplotlib.pyplot as plt
 from datetime import datetime
 
 # App setup
-st.set_page_config(page_title="LeadFocal", page_icon="😶‍🌫", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="LeadFocal", page_icon="😶‍🌫", initial_sidebar_state="expanded")
 
 # Language Options
-lang = st.sidebar.selectbox("Select Language", ["English", "中文", "Malay"])
+lang = st.sidebar.selectbox("Select Language", ["English","中文", "Malay"])
 
 # Translations
 translations = {
@@ -21,7 +21,7 @@ translations = {
         "upload_prompt": "Upload an image",
         "detected_emotion": "Detected Emotion",
         "estimated_location": "Estimated Location",
-        "start_prompt": "Please enter your username to begin.",
+        "start_prompt": "Please enter your usernamme to begin.",
         "nav_home": "Home",
         "nav_history": "History",
         "upload_history": "Upload History",
@@ -47,7 +47,7 @@ translations = {
         "filter_user": "按用户名筛选（可选）：",
         "records_shown": "条记录已显示。",
         "no_record_found": "尚未找到任何记录。",
-        "enter_username_history": "请输入用户名以查看历史记录。",
+        "enter_username_history": "请输入用户名以查看历史记录"
     },
     "Malay": {
         "title": "Sistem Pengecaman Emosi dan Lokasi",
@@ -65,16 +65,20 @@ translations = {
         "filter_user": "Tapis mengikut nama pengguna (pilihan):",
         "records_shown": "rekod dipaparkan.",
         "no_record_found": "Tiada rekod dijumpai setakat ini.",
-        "enter_username_history": "Sila masukkan nama pengguna untuk melihat sejarah.",
-    },
+        "enter_username_history": "Sila masukkan nama pengguna untuk melihat sejarah."
+    }
 }
-T = translations[lang]
 
-# Sidebar Navigation
+T = translations[lang]
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to", [T["nav_home"], T["nav_history"]])
 
-# Processing Functions
+# Title Design
+st.markdown(f"<h1 style='text-align: center; color: #444;'>{T['title']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h4 style='text-align: center; color: #888;'>{T['subtitle']}</h4>", unsafe_allow_html=True)
+
+username = st.text_input(T["username_prompt"])
+
 def analyze_emotion(image):
     emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprised"]
     return random.choice(emotions)
@@ -92,11 +96,6 @@ def save_history(username, emotion, location):
     except FileNotFoundError:
         history_df = new_record
     history_df.to_csv("history.csv", index=False)
-
-# Main UI
-st.title(T["title"])
-st.caption(T["subtitle"])
-username = st.text_input(T["username_prompt"])
 
 if page == T["nav_home"]:
     if username:
@@ -123,19 +122,12 @@ elif page == T["nav_history"]:
                 st.info(T["no_history"])
             else:
                 keyword = st.text_input(T["filter_user"]).strip()
-                filtered_df = history_df[history_df["Username"].str.lower() == keyword.lower()] if keyword else history_df
+                if keyword:
+                    filtered_df = history_df[history_df["Username"].str.lower() == keyword.lower()]
+                else:
+                    filtered_df = history_df
                 st.dataframe(filtered_df)
                 st.caption(f"{len(filtered_df)} {T['records_shown']}")
-
-                # Emotion Distribution Chart
-                if not filtered_df.empty:
-                    emotion_count = filtered_df["Emotion"].value_counts().reset_index()
-                    emotion_count.columns = ["Emotion", "Count"]
-                    fig = px.pie(emotion_count, names="Emotion", values="Count", title="Emotion Distribution")
-                    st.plotly_chart(fig)
-
-                    # Toast if available
-                    st.toast("✅ History loaded successfully.")
         except FileNotFoundError:
             st.info(T["no_record_found"])
     else:
