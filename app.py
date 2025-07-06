@@ -214,7 +214,9 @@ def main():
                         st.info(T['no_history'])
                     else:
                         df_filtered = df[df["Username"].str.contains(username, case=False)] if username else df
-                        st.dataframe(df_filtered.sort_values("timestamp", ascending=False))
+                        df_filtered = df_filtered.sort_values("timestamp", ascending=False).reset_index(drop=True)
+                        df_filtered.index = df_filtered.index + 1  # 从1开始编号
+                        st.dataframe(df_filtered)
                         st.caption(f"{len(df_filtered)} {T['records_shown']}")
                 else:
                     st.info(T['no_history'])
