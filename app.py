@@ -26,22 +26,12 @@ translations = {
         "nav_location_map": "Location Map",
         "nav_history": "History",
         "nav_filter": "Search & Filter",
-        "nav_emotion_chart": "Emotion Chart",
         "upload_history": "Upload History",
         "no_history": "No history available yet.",
         "filter_user": "Filter by username (optional):",
         "records_shown": "record(s) shown.",
         "no_record_found": "No record found yet.",
         "enter_username_history": "Please enter your username to view history.",
-        "choose_emotion": "Choose emotion:",
-        "set_confidence": "Set confidence level:",
-        "select_date": "Select date:",
-        "progress_example": "Progress bar example:",
-        "everything_ok": "Everything looks good!",
-        "left_controls": "Use left controls to customize analysis",
-        "no_image": "No image uploaded yet",
-        "toast_msg": "This is a toast message!",
-        "download_csv": "Download Dummy CSV",
     },
     "中文": {
         "title": "情绪与位置识别系统",
@@ -55,23 +45,13 @@ translations = {
         "nav_home": "主页",
         "nav_location_map": "位置地图",
         "nav_history": "历史记录",
-        "nav_filter": "查找与筛选",
-        "nav_emotion_chart": "情绪图表",
+        "nav_filter": "查找 & 筛选",
         "upload_history": "上传历史",
         "no_history": "暂无历史记录。",
         "filter_user": "按用户名筛选（可选）：",
         "records_shown": "条记录已显示。",
         "no_record_found": "尚未找到任何记录。",
-        "enter_username_history": "请输入用户名以查看历史记录。",
-        "choose_emotion": "选择情绪：",
-        "set_confidence": "设置信心等级：",
-        "select_date": "选择日期：",
-        "progress_example": "进度条示例：",
-        "everything_ok": "一切看起来都正常！",
-        "left_controls": "使用左侧控制项自定义分析",
-        "no_image": "尚未上传图片",
-        "toast_msg": "这是一个提示消息！",
-        "download_csv": "下载示例CSV文件",
+        "enter_username_history": "请输入用户名以查看历史记录。"
     },
     "Malay": {
         "title": "Sistem Pengecaman Emosi dan Lokasi",
@@ -86,29 +66,19 @@ translations = {
         "nav_location_map": "Peta Lokasi",
         "nav_history": "Sejarah",
         "nav_filter": "Cari & Tapis",
-        "nav_emotion_chart": "Carta Emosi",
         "upload_history": "Sejarah Muat Naik",
         "no_history": "Tiada sejarah tersedia buat masa ini.",
         "filter_user": "Tapis mengikut nama pengguna (pilihan):",
         "records_shown": "rekod dipaparkan.",
         "no_record_found": "Tiada rekod dijumpai setakat ini.",
         "enter_username_history": "Sila masukkan nama pengguna untuk melihat sejarah.",
-        "choose_emotion": "Pilih emosi:",
-        "set_confidence": "Tetapkan tahap keyakinan:",
-        "select_date": "Pilih tarikh:",
-        "progress_example": "Contoh bar kemajuan:",
-        "everything_ok": "Semua nampak baik!",
-        "left_controls": "Gunakan kawalan kiri untuk sesuaikan analisis",
-        "no_image": "Belum ada imej dimuat naik",
-        "toast_msg": "Ini adalah mesej pemberitahuan!",
-        "download_csv": "Muat Turun CSV Contoh",
     },
 }
 T = translations[lang]
 
 # ----------------- Main Title -----------------
 st.markdown(f"""
-    <h1 style='text-align: center; color: #444444;'>👁‍🗨👁‍🗨 {T['title']}</h1>
+    <h1 style='text-align: center; color: #444444;'>👁‍🗨 {T['title']}</h1>
     <h4 style='text-align: center; color: #888888;'>{T['subtitle']}</h4>
 """, unsafe_allow_html=True)
 
@@ -117,7 +87,7 @@ tabs = st.tabs([
     f"🏠 {T['nav_home']}",
     f"📊 {T['nav_location_map']}",
     f"📂 {T['nav_history']}",
-    f"📊 {T['nav_emotion_chart']}"
+    f"📊 {T['nav_filter']}"
 ])
 
 # ----------------- Utilities -----------------
@@ -185,9 +155,11 @@ with tabs[2]:
     else:
         st.warning(T["enter_username_history"])
 
-# ----------------- Tab 4: Emotion Chart -----------------
+# ----------------- Tab 4: Filter -----------------
 with tabs[3]:
-    st.subheader(f"🔪 {T['nav_emotion_chart']}")
+    st.subheader(f"🧪 {T['nav_filter']}")
+  
+    st.subheader(f"📊 {T['nav_emotion_chart']}")
     try:
         df = pd.read_csv("history.csv")
         chart = df["Emotion"].value_counts().reset_index()
@@ -195,29 +167,30 @@ with tabs[3]:
         fig = px.pie(chart, names="Emotion", values="Count", title="Emotion Analysis")
         st.plotly_chart(fig)
     except:
-        st.warning("No data available to generate chart.")
+        st.warning("📂 No data available to generate chart.")
+
 
     col1, col2 = st.columns([2, 1])
     with col1:
-        st.markdown(f"**🔘 {T['choose_emotion']}**")
+        st.markdown("**🔘 Choose emotion:**")
         emotion = st.radio("Emotion?", ["😊 Happy", "😢 Sad", "😡 Angry"], horizontal=True)
 
-        st.markdown(f"**🎚️ {T['set_confidence']}**")
+        st.markdown("**🎚️ Set confidence level:**")
         level = st.select_slider("Confidence", options=["Low", "Medium", "High"])
 
-        st.markdown(f"**🗓️ {T['select_date']}**")
+        st.markdown("**📅 Select date:**")
         date = st.date_input("Date of entry")
 
-        st.markdown(f"**⌛ {T['progress_example']}**")
+        st.markdown("**⌛ Progress bar example:**")
         progress = st.progress(0)
         for i in range(100):
             progress.progress(i + 1)
 
     with col2:
-        st.success(f"✅ {T['everything_ok']}")
-        st.info(f"ℹ️ {T['left_controls']}")
-        st.warning(f"⚠️ {T['no_image']}")
+        st.success("✅ Everything looks good!")
+        st.info("ℹ️ Use left controls to customize analysis")
+        st.warning("⚠️ No image uploaded yet")
 
-    st.toast(f"🔔 {T['toast_msg']}", icon="✅")
+    st.toast("🔔 This is a toast message!", icon="✅")
     dummy_data = pd.DataFrame({"Emotion": ["Happy", "Sad"], "Count": [10, 8]})
-    st.download_button(f"⬇️ {T['download_csv']}", data=dummy_data.to_csv(), file_name="dummy.csv")
+    st.download_button("⬇️ Download Dummy CSV", data=dummy_data.to_csv(), file_name="dummy.csv")
