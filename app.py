@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ----------------- Page Setup -----------------
-st.set_page_config(page_title="LeadFocal", page_icon="👁‍🗨👁‍🗨", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="LeadFocal", page_icon="👁‍🗨", layout="wide", initial_sidebar_state="expanded")
 
 # ----------------- Language Setup -----------------
 lang = st.sidebar.selectbox("🌐 Select Language", ["English","中文", "Malay"])
