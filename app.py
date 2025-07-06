@@ -17,7 +17,7 @@ translations = {
         "title": "Emotion & Location Recognition System",
         "subtitle": "Try uploading a local photo to analyze emotion and estimate location.",
         "username_prompt": "Enter your username:",
-        "logged_in": "Logged in as:",
+        "logged_in": " 👤 Logged in as:",
         "upload_prompt": "Upload an image",
         "detected_emotion": "Detected Emotion",
         "estimated_location": "Estimated Location",
@@ -37,7 +37,7 @@ translations = {
         "title": "情绪与位置识别系统",
         "subtitle": "尝试上传本地照片，体验情绪识别与位置推测功能。",
         "username_prompt": "请输入用户名：",
-        "logged_in": "已登录用户：",
+        "logged_in": " 👤 已登录用户：",
         "upload_prompt": "上传图片",
         "detected_emotion": "识别的情绪",
         "estimated_location": "推测的位置",
@@ -57,7 +57,7 @@ translations = {
         "title": "Sistem Pengecaman Emosi dan Lokasi",
         "subtitle": "Cuba muat naik foto tempatan untuk menganalisis emosi dan menganggar lokasi.",
         "username_prompt": "Masukkan nama pengguna anda:",
-        "logged_in": "Log masuk sebagai:",
+        "logged_in": " 👤 Log masuk sebagai:",
         "upload_prompt": "Muat naik imej",
         "detected_emotion": "Emosi Dikesan",
         "estimated_location": "Lokasi Dianggar",
@@ -90,6 +90,10 @@ tabs = st.tabs([
     f"📊 {T['nav_filter']}"
 ])
 
+# ----------------- Username Input -----------------
+if username:
+        st.sidebar.success(f"👤 {T['logged_in']} {username}")
+
 # ----------------- Utilities -----------------
 def analyze_emotion(image):
     emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprised"]
@@ -113,8 +117,7 @@ def save_history(username, emotion, location):
 with tabs[0]:
     username = st.text_input(f"👤 {T['username_prompt']}")
     if username:
-        st.sidebar.success(f"👤 {T['logged_in']} {username}")
-        uploaded_file = st.file_uploader(f"📄 {T['upload_prompt']}", type=["jpg", "jpeg", "png"])
+        uploaded_file = st.file_uploader(f"📤 {T['upload_prompt']}", type=["jpg", "jpeg", "png"])
         if uploaded_file:
             st.image(uploaded_file, caption="Image Preview", use_column_width=True)
             emotion = analyze_emotion(uploaded_file)
