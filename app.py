@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ----------------- Page Setup -----------------
-st.set_page_config(page_title="LeadFocal", page_icon="🧠", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="LeadFocal", page_icon="👁‍🗨", layout="wide", initial_sidebar_state="expanded")
 
 # ----------------- Language Setup -----------------
 lang = st.sidebar.selectbox("🌐 Select Language", ["English","中文", "Malay"])
@@ -15,7 +15,7 @@ lang = st.sidebar.selectbox("🌐 Select Language", ["English","中文", "Malay"
 translations = {
     "English": {
         "title": "Emotion & Location Recognition System",
-        "subtitle": "Try upload a local photo to analyze emotion and estimate location.",
+        "subtitle": "Try uploading a local photo to analyze emotion and estimate location.",
         "username_prompt": "Enter your username:",
         "logged_in": " 👤 Logged in as:",
         "upload_prompt": "Upload an image",
@@ -24,6 +24,9 @@ translations = {
         "start_prompt": "Please enter your username to begin.",
         "nav_home": "Home",
         "nav_history": "History",
+        "nav_emotion_chart": "Emotion Chart",
+        "nav_location_map": "Location Map",
+        "nav_design_demo": "Design Demo",
         "upload_history": "Upload History",
         "no_history": "No history available yet.",
         "filter_user": "Filter by username (optional):",
@@ -42,6 +45,9 @@ translations = {
         "start_prompt": "请输入用户名以开始。",
         "nav_home": "主页",
         "nav_history": "历史记录",
+        "nav_emotion_chart": "情绪图表",
+        "nav_location_map": "位置地图",
+        "nav_design_demo": "设计演示",
         "upload_history": "上传历史",
         "no_history": "暂无历史记录。",
         "filter_user": "按用户名筛选（可选）：",
@@ -60,6 +66,9 @@ translations = {
         "start_prompt": "Sila masukkan nama pengguna untuk bermula.",
         "nav_home": "Halaman Utama",
         "nav_history": "Sejarah",
+        "nav_emotion_chart": "Carta Emosi",
+        "nav_location_map": "Peta Lokasi",
+        "nav_design_demo": "Demo Reka Bentuk",
         "upload_history": "Sejarah Muat Naik",
         "no_history": "Tiada sejarah tersedia buat masa ini.",
         "filter_user": "Tapis mengikut nama pengguna (pilihan):",
@@ -77,7 +86,12 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ----------------- Tabs -----------------
-tabs = st.tabs([f"🏠 {T['nav_home']}", f"📂 {T['nav_history']}", "📊 Emotion Chart", "📦 Design Demo"])
+tabs = st.tabs([
+    f"🏠 {T['nav_home']}",
+    f"📂 {T['nav_history']}",
+    f"📊 {T['nav_emotion_chart']}",
+    f"🧪 {T['nav_design_demo']}"
+])
 
 # ----------------- Username Input -----------------
 username = st.sidebar.text_input(f"👤 {T['username_prompt']}")
@@ -141,7 +155,7 @@ with tabs[1]:
 
 # ----------------- Tab 3: Charts -----------------
 with tabs[2]:
-    st.subheader("📊 Emotion Distribution")
+    st.subheader(f"📊 {T['nav_emotion_chart']}")
     try:
         df = pd.read_csv("history.csv")
         chart = df["Emotion"].value_counts().reset_index()
@@ -153,7 +167,7 @@ with tabs[2]:
 
 # ----------------- Tab 4: Design Demo -----------------
 with tabs[3]:
-    st.subheader("📦 Design & Widgets Demo")
+    st.subheader(f"🧪 {T['nav_design_demo']}")
 
     col1, col2 = st.columns([2, 1])
     with col1:
