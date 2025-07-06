@@ -173,9 +173,6 @@ with tabs[3]:
         st.markdown("**🔘 Choose emotion:**")
         emotion = st.radio("Emotion?", ["😊 Happy", "😢 Sad", "😡 Angry"], horizontal=True)
 
-        st.markdown("**🎚️ Set confidence level:**")
-        level = st.select_slider("Confidence", options=["Low", "Medium", "High"])
-
         st.markdown("**📅 Select date:**")
         date = st.date_input("Date of entry")
 
