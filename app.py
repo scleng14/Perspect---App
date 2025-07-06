@@ -44,7 +44,8 @@ TRANSLATIONS = {
         "no_faces": "未检测到人脸",
         "error_processing": "图片处理错误",
         "debug_info": "调试信息",
-        "input_username_continue": "请输入用户名继续"
+        "input_username_continue": "请输入用户名继续",
+        "user_auth": "用户身份验证"
     },
     "English": {
         "title": "AI Emotion & Location Detector",
@@ -62,7 +63,8 @@ TRANSLATIONS = {
         "no_faces": "No faces detected",
         "error_processing": "Error processing image",
         "debug_info": "Debug Info",
-        "input_username_continue": "Please enter a username to continue"
+        "input_username_continue": "Please enter a username to continue",
+        "user_auth": "User Authentication"
     },
     "Malay": {
         "title": "Sistem Pengesanan Emosi & Lokasi AI",
@@ -80,7 +82,8 @@ TRANSLATIONS = {
         "no_faces": "Tiada muka dikesan",
         "error_processing": "Ralat memproses imej",
         "debug_info": "Maklumat Debug",
-        "input_username_continue": "Masukkan nama pengguna untuk meneruskan"
+        "input_username_continue": "Masukkan nama pengguna untuk meneruskan",
+        "user_auth": "Pengesahan Pengguna"
     }
 }
 T = TRANSLATIONS[lang]
@@ -89,7 +92,8 @@ T = TRANSLATIONS[lang]
 @st.cache_resource
 def load_face_cascade():
     try:
-        return cv2.CascadeClassifier("models/haarcascade_frontalface_default.xml")
+        model_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        return cv2.CascadeClassifier(model_path)
     except Exception as e:
         logger.error(f"模型加载失败: {e}")
         st.error("Failed to load face detection model")
@@ -199,6 +203,7 @@ def main():
         st.session_state.username = ""
 
     with st.sidebar:
+        st.subheader(T["user_auth"])
         username = st.text_input(T["enter_username"], key="username_input")
         if username:
             st.session_state.username = username
