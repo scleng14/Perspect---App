@@ -1,17 +1,16 @@
-
 import streamlit as st
 import random
 import pandas as pd
-import matplotlib.pyplot as plt
 from datetime import datetime
+import matplotlib.pyplot as plt
+import plotly.express as px
 
-# App setup
-st.set_page_config(page_title="LeadFocal", page_icon="😶‍🌫", initial_sidebar_state="expanded")
+# ----------------- Page Setup -----------------
+st.set_page_config(page_title="LeadFocal", page_icon="😶‍⁣🌫", layout="wide", initial_sidebar_state="expanded")
 
-# Language Options
-lang = st.sidebar.selectbox("Select Language", ["English","中文", "Malay"])
+# ----------------- Language Setup -----------------
+lang = st.sidebar.selectbox("🌐 Language", ["English", "中文", "Malay"])
 
-# Translations
 translations = {
     "English": {
         "title": "Emotion & Location Recognition System",
@@ -21,7 +20,7 @@ translations = {
         "upload_prompt": "Upload an image",
         "detected_emotion": "Detected Emotion",
         "estimated_location": "Estimated Location",
-        "start_prompt": "Please enter your usernamme to begin.",
+        "start_prompt": "Please enter your username to begin.",
         "nav_home": "Home",
         "nav_history": "History",
         "upload_history": "Upload History",
@@ -70,26 +69,26 @@ translations = {
 }
 
 T = translations[lang]
-st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", [T["nav_home"], T["nav_history"]])
 
-# Title Design
-st.markdown(f"<h1 style='text-align: center; color: #444;'>{T['title']}</h1>", unsafe_allow_html=True)
-st.markdown(f"<h4 style='text-align: center; color: #888;'>{T['subtitle']}</h4>", unsafe_allow_html=True)
+# ----------------- User Input -----------------
+st.markdown(f"<h1 style='text-align: center; color: #444444;'>🎨 {T['title']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h4 style='text-align: center; color: #888888;'>{T['subtitle']}</h4>", unsafe_allow_html=True)
 
 username = st.text_input(T["username_prompt"])
 
+# ----------------- Tabs -----------------
+tabs = st.tabs([T["nav_home"], T["nav_history"], "📈 Emotion Chart"])
+
+# ----------------- Emotion & Location Mock Logic -----------------
 def analyze_emotion(image):
-    emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprised"]
-    return random.choice(emotions)
+    return random.choice(["Happy", "Sad", "Angry", "Neutral", "Surprised"])
 
 def get_location(image):
-    locations = ["Kuala Lumpur, Malaysia", "Tokyo, Japan", "Paris, France", "Unknown"]
-    return random.choice(locations)
+    return random.choice(["Kuala Lumpur, Malaysia", "Tokyo, Japan", "Paris, France", "Unknown"])
 
 def save_history(username, emotion, location):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    new_record = pd.DataFrame([[username, emotion, location, timestamp]], columns=["Username", "Emotion", "Location", "timestamp"])
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    new_record = pd.DataFrame([[username, emotion, location, now]], columns=["Username", "Emotion", "Location", "Timestamp"])
     try:
         history_df = pd.read_csv("history.csv")
         history_df = pd.concat([history_df, new_record], ignore_index=True)
@@ -97,12 +96,13 @@ def save_history(username, emotion, location):
         history_df = new_record
     history_df.to_csv("history.csv", index=False)
 
-if page == T["nav_home"]:
+# ----------------- Tab 1: Home -----------------
+with tabs[0]:
     if username:
-        st.sidebar.success(f"{T['logged_in']} {username}")
+        st.success(f"{T['logged_in']} {username}")
         uploaded_file = st.file_uploader(T["upload_prompt"], type=["jpg", "jpeg", "png"])
         if uploaded_file:
-            st.image(uploaded_file, caption="Image Preview", use_container_width=True)
+            st.image(uploaded_file, caption="Image Preview", use_column_width=True)
             emotion = analyze_emotion(uploaded_file)
             location = get_location(uploaded_file)
             st.success(f"{T['detected_emotion']}: **{emotion}**")
@@ -113,8 +113,9 @@ if page == T["nav_home"]:
     else:
         st.warning(T["start_prompt"])
 
-elif page == T["nav_history"]:
-    st.header(T["upload_history"])
+# ----------------- Tab 2: History -----------------
+with tabs[1]:
+    st.subheader(T["upload_history"])
     if username:
         try:
             history_df = pd.read_csv("history.csv")
@@ -132,3 +133,14 @@ elif page == T["nav_history"]:
             st.info(T["no_record_found"])
     else:
         st.warning(T["enter_username_history"])
+
+# ----------------- Tab 3: Emotion Chart -----------------
+with tabs[2]:
+    try:
+        history_df = pd.read_csv("history.csv")
+        emotion_counts = history_df["Emotion"].value_counts().reset_index()
+        emotion_counts.columns = ["Emotion", "Count"]
+        fig = px.pie(emotion_counts, names="Emotion", values="Count", title="Emotion Distribution")
+        st.plotly_chart(fig)
+    except Exception as e:
+        st.info("No data available for chart yet.")
