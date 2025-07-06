@@ -2,14 +2,15 @@ import streamlit as st
 import random
 import pandas as pd
 from datetime import datetime
-import matplotlib.pyplot as plt
 import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # ----------------- Page Setup -----------------
-st.set_page_config(page_title="LeadFocal", page_icon="😶‍⁣🌫", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="LeadFocal", page_icon="🧠", layout="wide", initial_sidebar_state="expanded")
 
 # ----------------- Language Setup -----------------
-lang = st.sidebar.selectbox("🌐 Language", ["English", "中文", "Malay"])
+lang = st.sidebar.selectbox("🌐 Select Language", ["English","中文", "Malay"])
 
 translations = {
     "English": {
@@ -46,7 +47,7 @@ translations = {
         "filter_user": "按用户名筛选（可选）：",
         "records_shown": "条记录已显示。",
         "no_record_found": "尚未找到任何记录。",
-        "enter_username_history": "请输入用户名以查看历史记录"
+        "enter_username_history": "请输入用户名以查看历史记录。"
     },
     "Malay": {
         "title": "Sistem Pengecaman Emosi dan Lokasi",
@@ -64,31 +65,35 @@ translations = {
         "filter_user": "Tapis mengikut nama pengguna (pilihan):",
         "records_shown": "rekod dipaparkan.",
         "no_record_found": "Tiada rekod dijumpai setakat ini.",
-        "enter_username_history": "Sila masukkan nama pengguna untuk melihat sejarah."
-    }
+        "enter_username_history": "Sila masukkan nama pengguna untuk melihat sejarah.",
+    },
 }
-
 T = translations[lang]
 
-# ----------------- User Input -----------------
-st.markdown(f"<h1 style='text-align: center; color: #444444;'>🎨 {T['title']}</h1>", unsafe_allow_html=True)
-st.markdown(f"<h4 style='text-align: center; color: #888888;'>{T['subtitle']}</h4>", unsafe_allow_html=True)
-
-username = st.text_input(T["username_prompt"])
+# ----------------- Main Title -----------------
+st.markdown(f"""
+    <h1 style='text-align: center; color: #444444;'>🧠 {T['title']}</h1>
+    <h4 style='text-align: center; color: #888888;'>{T['subtitle']}</h4>
+""", unsafe_allow_html=True)
 
 # ----------------- Tabs -----------------
-tabs = st.tabs([T["nav_home"], T["nav_history"], "📈 Emotion Chart"])
+tabs = st.tabs([f"🏠 {T['nav_home']}", f"📂 {T['nav_history']}", "📊 Emotion Chart", "📦 Design Demo"])
 
-# ----------------- Emotion & Location Mock Logic -----------------
+# ----------------- Username Input -----------------
+username = st.sidebar.text_input(f"👤 {T['username_prompt']}")
+
+# ----------------- Utilities -----------------
 def analyze_emotion(image):
-    return random.choice(["Happy", "Sad", "Angry", "Neutral", "Surprised"])
+    emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprised"]
+    return random.choice(emotions)
 
 def get_location(image):
-    return random.choice(["Kuala Lumpur, Malaysia", "Tokyo, Japan", "Paris, France", "Unknown"])
+    locations = ["Kuala Lumpur, Malaysia", "Tokyo, Japan", "Paris, France", "Unknown"]
+    return random.choice(locations)
 
 def save_history(username, emotion, location):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    new_record = pd.DataFrame([[username, emotion, location, now]], columns=["Username", "Emotion", "Location", "Timestamp"])
+    new_record = pd.DataFrame([[username, emotion, location, now]], columns=["Username", "Emotion", "Location", "timestamp"])
     try:
         history_df = pd.read_csv("history.csv")
         history_df = pd.concat([history_df, new_record], ignore_index=True)
@@ -100,7 +105,7 @@ def save_history(username, emotion, location):
 with tabs[0]:
     if username:
         st.success(f"{T['logged_in']} {username}")
-        uploaded_file = st.file_uploader(T["upload_prompt"], type=["jpg", "jpeg", "png"])
+        uploaded_file = st.file_uploader(f"📤 {T['upload_prompt']}", type=["jpg", "jpeg", "png"])
         if uploaded_file:
             st.image(uploaded_file, caption="Image Preview", use_column_width=True)
             emotion = analyze_emotion(uploaded_file)
@@ -109,13 +114,13 @@ with tabs[0]:
             st.info(f"{T['estimated_location']}: **{location}**")
             save_history(username, emotion, location)
         else:
-            st.warning(T["upload_prompt"])
+            st.warning(f"{T['upload_prompt']}")
     else:
         st.warning(T["start_prompt"])
 
 # ----------------- Tab 2: History -----------------
 with tabs[1]:
-    st.subheader(T["upload_history"])
+    st.header(f"📜 {T['upload_history']}")
     if username:
         try:
             history_df = pd.read_csv("history.csv")
@@ -134,13 +139,48 @@ with tabs[1]:
     else:
         st.warning(T["enter_username_history"])
 
-# ----------------- Tab 3: Emotion Chart -----------------
+# ----------------- Tab 3: Charts -----------------
 with tabs[2]:
+    st.subheader("📊 Emotion Distribution")
     try:
-        history_df = pd.read_csv("history.csv")
-        emotion_counts = history_df["Emotion"].value_counts().reset_index()
-        emotion_counts.columns = ["Emotion", "Count"]
-        fig = px.pie(emotion_counts, names="Emotion", values="Count", title="Emotion Distribution")
+        df = pd.read_csv("history.csv")
+        chart = df["Emotion"].value_counts().reset_index()
+        chart.columns = ["Emotion", "Count"]
+        fig = px.pie(chart, names="Emotion", values="Count", title="Emotion Analysis")
         st.plotly_chart(fig)
-    except Exception as e:
-        st.info("No data available for chart yet.")
+    except:
+        st.warning("📂 No data available to generate chart.")
+
+# ----------------- Tab 4: Design Demo -----------------
+with tabs[3]:
+    st.subheader("📦 Design & Widgets Demo")
+
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.markdown("**🔘 Choose emotion:**")
+        emotion = st.radio("Emotion?", ["😊 Happy", "😢 Sad", "😡 Angry"], horizontal=True)
+
+        st.markdown("**🎚️ Set confidence level:**")
+        level = st.select_slider("Confidence", options=["Low", "Medium", "High"])
+
+        st.markdown("**📅 Select date:**")
+        date = st.date_input("Date of entry")
+
+        st.markdown("**⌛ Progress bar example:**")
+        progress = st.progress(0)
+        for i in range(100):
+            progress.progress(i + 1)
+
+    with col2:
+        st.success("✅ Everything looks good!")
+        st.info("ℹ️ Use left controls to customize analysis")
+        st.warning("⚠️ No image uploaded yet")
+
+    st.toast("🔔 This is a toast message!", icon="✅")
+    dummy_data = pd.DataFrame({"Emotion": ["Happy", "Sad"], "Count": [10, 8]})
+    st.download_button("⬇️ Download Dummy CSV", data=dummy_data.to_csv(), file_name="dummy.csv")
+
+    st.map(pd.DataFrame({
+        'lat': [3.1390 + random.uniform(-0.01, 0.01)],
+        'lon': [101.6869 + random.uniform(-0.01, 0.01)]
+    }))
