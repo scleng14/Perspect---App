@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ----------------- Page Setup -----------------
-st.set_page_config(page_title="LeadFocal", page_icon="👁‍🔮", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="LeadFocal", page_icon="👁‍🗨", layout="wide", initial_sidebar_state="expanded")
 
 # ----------------- Language Setup -----------------
 lang = st.sidebar.selectbox("🌐 Select Language", ["English","中文", "Malay"])
@@ -17,7 +17,7 @@ translations = {
         "title": "Emotion & Location Recognition System",
         "subtitle": "Try uploading a local photo to analyze emotion and estimate location.",
         "username_prompt": "Enter your username:",
-        "logged_in": " 👤 Logged in as:",
+        "logged_in": "Logged in as:",
         "upload_prompt": "Upload an image",
         "detected_emotion": "Detected Emotion",
         "estimated_location": "Estimated Location",
@@ -108,7 +108,7 @@ T = translations[lang]
 
 # ----------------- Main Title -----------------
 st.markdown(f"""
-    <h1 style='text-align: center; color: #444444;'>👁‍🔮 {T['title']}</h1>
+    <h1 style='text-align: center; color: #444444;'>👁‍🗨 {T['title']}</h1>
     <h4 style='text-align: center; color: #888888;'>{T['subtitle']}</h4>
 """, unsafe_allow_html=True)
 
