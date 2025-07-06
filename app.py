@@ -1,5 +1,3 @@
-# ai_emotion_location_app.py
-
 import streamlit as st
 import cv2
 import numpy as np
@@ -32,6 +30,7 @@ TRANSLATIONS = {
         "title": "AI情绪与位置检测系统",
         "upload_guide": "上传照片分析面部表情并推测位置（带GPS或地标）",
         "username": "用户名",
+        "user_auth": "用户认证",  # 新增
         "enter_username": "输入用户名",
         "welcome": "欢迎",
         "upload_image": "上传图片 (JPG/PNG)",
@@ -50,6 +49,7 @@ TRANSLATIONS = {
         "title": "AI Emotion & Location Detector",
         "upload_guide": "Upload a photo to analyze facial expressions and estimate location (via GPS or landmark)",
         "username": "Username",
+        "user_auth": "User Authentication",  # 新增
         "enter_username": "Enter your username",
         "welcome": "Welcome",
         "upload_image": "Upload an image (JPG/PNG)",
@@ -68,6 +68,7 @@ TRANSLATIONS = {
         "title": "Sistem Pengesanan Emosi & Lokasi AI",
         "upload_guide": "Muat naik foto untuk analisis ekspresi muka dan anggaran lokasi (GPS atau mercu tanda)",
         "username": "Nama pengguna",
+        "user_auth": "Pengesahan Pengguna",  # 新增
         "enter_username": "Masukkan nama pengguna",
         "welcome": "Selamat datang",
         "upload_image": "Muat naik imej (JPG/PNG)",
@@ -89,8 +90,16 @@ T = TRANSLATIONS[lang]
 @st.cache_resource
 def load_face_cascade():
     try:
-        model_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        return cv2.CascadeClassifier(model_path)
+        # 显式指定模型路径
+        model_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file not found at {model_path}")
+            
+        cascade = cv2.CascadeClassifier(model_path)
+        if cascade.empty():
+            raise ValueError("Failed to load cascade classifier")
+            
+        return cascade
     except Exception as e:
         logger.error(f"模型加载失败: {e}")
         st.error("Failed to load face detection model")
@@ -200,7 +209,7 @@ def main():
         st.session_state.username = ""
 
     with st.sidebar:
-        st.subheader(T.get("user_auth", "Authentication"))
+        st.subheader(T["user_auth"])  # 现在这个键已存在
         username = st.text_input(T["enter_username"], key="username_input")
         if username:
             st.session_state.username = username
