@@ -29,7 +29,7 @@ TRANSLATIONS = {
         "title": "AI情绪与位置检测系统",
         "upload_guide": "上传照片分析面部表情并推测位置",
         "username": "用户名",
-        "user_auth": "用户认证",  # 新增
+        "user_auth": "用户认证",
         "enter_username": "输入用户名",
         "welcome": "欢迎",
         "upload_image": "上传图片 (JPG/PNG)",
@@ -42,13 +42,24 @@ TRANSLATIONS = {
         "no_faces": "未检测到人脸",
         "error_processing": "图片处理错误",
         "debug_info": "调试信息",
-        "input_username_continue": "请输入用户名继续"
+        "input_username_continue": "请输入用户名继续",
+        "nav_home": "主页",
+        "nav_location_map": "位置地图",
+        "nav_history": "历史记录",
+        "nav_filter": "查找 & 筛选",
+        "nav_emotion_chart": "情绪分析图表",  # 新增
+        "upload_history": "上传历史",
+        "no_history": "暂无历史记录",
+        "filter_user": "按用户名筛选",
+        "records_shown": "条记录已显示",
+        "no_record_found": "未找到记录",
+        "enter_username_history": "请输入用户名查看历史"
     },
     "English": {
         "title": "AI Emotion & Location Detector",
         "upload_guide": "Upload a photo to analyze facial expressions and estimate location",
         "username": "Username",
-        "user_auth": "User Authentication",  # 新增
+        "user_auth": "User Authentication",
         "enter_username": "Enter your username",
         "welcome": "Welcome",
         "upload_image": "Upload an image (JPG/PNG)",
@@ -61,13 +72,24 @@ TRANSLATIONS = {
         "no_faces": "No faces detected",
         "error_processing": "Error processing image",
         "debug_info": "Debug Info",
-        "input_username_continue": "Please enter a username to continue"
+        "input_username_continue": "Please enter a username to continue",
+        "nav_home": "Home",
+        "nav_location_map": "Location Map",
+        "nav_history": "History",
+        "nav_filter": "Search & Filter",
+        "nav_emotion_chart": "Emotion Chart",  # 新增
+        "upload_history": "Upload History",
+        "no_history": "No history available",
+        "filter_user": "Filter by username",
+        "records_shown": "records shown",
+        "no_record_found": "No records found",
+        "enter_username_history": "Please enter username to view history"
     },
     "Malay": {
         "title": "Sistem Pengesanan Emosi & Lokasi AI",
         "upload_guide": "Muat naik foto untuk analisis ekspresi muka dan anggaran lokasi",
         "username": "Nama pengguna",
-        "user_auth": "Pengesahan Pengguna",  # 新增
+        "user_auth": "Pengesahan Pengguna",
         "enter_username": "Masukkan nama pengguna",
         "welcome": "Selamat datang",
         "upload_image": "Muat naik imej (JPG/PNG)",
@@ -80,7 +102,18 @@ TRANSLATIONS = {
         "no_faces": "Tiada muka dikesan",
         "error_processing": "Ralat memproses imej",
         "debug_info": "Maklumat Debug",
-        "input_username_continue": "Masukkan nama pengguna untuk meneruskan"
+        "input_username_continue": "Masukkan nama pengguna untuk meneruskan",
+        "nav_home": "Halaman Utama",
+        "nav_location_map": "Peta Lokasi",
+        "nav_history": "Sejarah",
+        "nav_filter": "Cari & Tapis",
+        "nav_emotion_chart": "Carta Emosi",  # 新增
+        "upload_history": "Sejarah Muat Naik",
+        "no_history": "Tiada sejarah tersedia",
+        "filter_user": "Tapis mengikut nama pengguna",
+        "records_shown": "rekod dipaparkan",
+        "no_record_found": "Tiada rekod dijumpai",
+        "enter_username_history": "Sila masukkan nama pengguna untuk melihat sejarah"
     }
 }
 T = TRANSLATIONS[lang]
@@ -89,16 +122,10 @@ T = TRANSLATIONS[lang]
 @st.cache_resource
 def load_face_cascade():
     try:
-        # 使用OpenCV自带的模型路径
         model_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found at {model_path}")
-        
-        cascade = cv2.CascadeClassifier(model_path)
-        if cascade.empty():
-            raise ValueError("Failed to load cascade classifier")
-        
-        return cascade
+        return cv2.CascadeClassifier(model_path)
     except Exception as e:
         logger.error(f"模型加载失败: {e}")
         st.error("Failed to load face detection model")
@@ -114,91 +141,24 @@ def detect_faces(img_cv, face_cascade):
         logger.error(f"人脸检测错误: {e}")
         return np.array([])
 
-def analyze_emotion(faces):
-    return ["happy" if random.random() > 0.5 else "neutral" for _ in faces]
+def analyze_emotion(image):
+    emotions = ["Happy", "Sad", "Angry", "Neutral", "Surprised"]
+    return random.choice(emotions)
 
-def draw_detections(img, faces, emotions):
-    """绘制检测框和情绪标签"""
-    img_copy = img.copy()
-    color_map = {
-        "happy": (0, 255, 0),    # 绿色
-        "neutral": (255, 255, 0), # 黄色
-        "sad": (0, 0, 255),       # 红色
-        "angry": (0, 165, 255)    # 橙色
-    }
+def save_history(username, emotion, location):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    new_record = pd.DataFrame([[username, emotion, location, now]], 
+                            columns=["Username", "Emotion", "Location", "timestamp"])
     
-    for i, ((x, y, w, h), emotion) in enumerate(zip(faces, emotions)):
-        color = color_map.get(emotion, (255, 255, 255))
-        cv2.rectangle(img_copy, (x, y), (x+w, y+h), color, 2)
-        cv2.putText(img_copy, emotion, (x, y-10), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
-    return img_copy
-
-def save_to_history(username, emotion, location):
     try:
-        new_record = pd.DataFrame([{
-            "username": username,
-            "emotion": emotion,
-            "location": location,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }])
-        
         if os.path.exists("history.csv"):
-            history = pd.read_csv("history.csv")
-            history = pd.concat([history, new_record])
+            history_df = pd.read_csv("history.csv")
+            history_df = pd.concat([history_df, new_record])
         else:
-            history = new_record
-            
-        history.to_csv("history.csv", index=False)
+            history_df = new_record
+        history_df.to_csv("history.csv", index=False)
     except Exception as e:
-        logger.error(f"保存历史记录失败: {e}")
-
-# ----------------- 显示分析结果 -----------------
-def show_analysis_results(uploaded_file, username, face_cascade):
-    try:
-        img = Image.open(uploaded_file)
-        img_cv = np.array(img.convert("RGB"))
-
-        col1, col2 = st.columns([1, 2])
-
-        with col1:
-            st.subheader(T["analysis_results"])
-
-            faces = detect_faces(img_cv, face_cascade)
-            if len(faces) == 0:
-                st.warning(T["no_faces"])
-                return
-
-            emotions = analyze_emotion(faces)
-            location = "Unknown"  # 简化版，不使用geopy
-
-            st.metric(T["detected_emotion"], ", ".join(emotions))
-            st.metric(T["estimated_location"], location)
-
-            save_to_history(username, emotions[0], location)
-
-            csv_data = pd.DataFrame({
-                "Emotion": emotions,
-                "Location": [location]*len(emotions)
-            }).to_csv(index=False)
-            
-            st.download_button(
-                label=T["download_results"],
-                data=csv_data,
-                file_name="analysis_results.csv"
-            )
-
-        with col2:
-            tab1, tab2 = st.tabs([T["original_image"], T["processed_image"]])
-            with tab1:
-                st.image(img, use_column_width=True)
-            with tab2:
-                detected_img = draw_detections(img_cv, faces, emotions)
-                st.image(detected_img, channels="BGR", use_column_width=True,
-                        caption=f"{len(faces)} {T['faces_detected']}")
-    except Exception as e:
-        logger.error(f"分析错误: {e}")
-        st.error(T["error_processing"])
+        logger.error(f"保存历史失败: {e}")
 
 # ----------------- 主程序 -----------------
 def main():
@@ -209,27 +169,84 @@ def main():
     if face_cascade is None:
         return
 
-    if "username" not in st.session_state:
-        st.session_state.username = ""
+    # 初始化标签页
+    tabs = st.tabs([
+        f"🏠 {T['nav_home']}",
+        f"🗺️ {T['nav_location_map']}",
+        f"📜 {T['nav_history']}",
+        f"📊 {T['nav_filter']}"
+    ])
 
-    with st.sidebar:
-        st.subheader(T["user_auth"])
-        username = st.text_input(T["enter_username"], key="username_input")
+    # 主页标签
+    with tabs[0]:
+        username = st.text_input(f"👤 {T['enter_username']}")
         if username:
-            st.session_state.username = username
-            st.success(f"{T['welcome']} {username}")
+            st.sidebar.success(f"👤 {T['welcome']} {username}")
+            uploaded_file = st.file_uploader(f"📄 {T['upload_image']}", type=["jpg", "jpeg", "png"])
+            if uploaded_file:
+                img = Image.open(uploaded_file)
+                img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+                
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    st.subheader(T["analysis_results"])
+                    emotion = analyze_emotion(img_cv)
+                    location = "Unknown"  # 简化位置功能
+                    
+                    st.metric(T["detected_emotion"], emotion)
+                    st.metric(T["estimated_location"], location)
+                    save_history(username, emotion, location)
+                
+                with col2:
+                    tab1, tab2 = st.tabs([T["original_image"], T["processed_image"]])
+                    with tab1:
+                        st.image(img, use_column_width=True)
+                    with tab2:
+                        faces = detect_faces(img_cv, face_cascade)
+                        if len(faces) > 0:
+                            for (x, y, w, h) in faces:
+                                cv2.rectangle(img_cv, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                        st.image(img_cv, channels="BGR", use_column_width=True)
 
-    with st.expander(T["debug_info"]):
-        st.write(f"OpenCV version: {cv2.__version__}")
-        st.write(f"Streamlit version: {st.__version__}")
-        st.write("Session State:", st.session_state)
+    # 位置地图标签
+    with tabs[1]:
+        st.map(pd.DataFrame({
+            'lat': [3.1390 + random.uniform(-0.01, 0.01)],
+            'lon': [101.6869 + random.uniform(-0.01, 0.01)]
+        }))
 
-    if st.session_state.username:
-        uploaded_file = st.file_uploader(T["upload_image"], type=["jpg", "jpeg", "png"])
-        if uploaded_file:
-            show_analysis_results(uploaded_file, st.session_state.username, face_cascade)
-    else:
-        st.warning(T["input_username_continue"])
+    # 历史记录标签
+    with tabs[2]:
+        st.header(f"📜 {T['upload_history']}")
+        if 'username' in st.session_state and st.session_state.username:
+            try:
+                history_df = pd.read_csv("history.csv") if os.path.exists("history.csv") else pd.DataFrame()
+                if not history_df.empty:
+                    st.dataframe(history_df)
+                else:
+                    st.info(T["no_history"])
+            except Exception as e:
+                st.error(f"读取历史记录错误: {e}")
+        else:
+            st.warning(T["enter_username_history"])
+
+    # 筛选标签
+    with tabs[3]:
+        st.subheader(f"🧪 {T['nav_filter']}")
+        st.subheader(f"📊 {T['nav_emotion_chart']}")
+        
+        try:
+            if os.path.exists("history.csv"):
+                df = pd.read_csv("history.csv")
+                if not df.empty:
+                    fig = px.pie(df, names="Emotion", title=T["nav_emotion_chart"])
+                    st.plotly_chart(fig)
+                else:
+                    st.warning(T["no_history"])
+            else:
+                st.warning(T["no_record_found"])
+        except Exception as e:
+            st.error(f"生成图表错误: {e}")
 
 if __name__ == "__main__":
     if not os.path.exists(".streamlit"):
