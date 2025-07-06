@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # ----------------- 多语言支持 -----------------
 LANGUAGES = ["中文", "English", "Malay"]
-lang = st.sidebar.selectbox("🌐 Select Language / 选择语言 / Pilih Bahasa", LANGUAGES)
+lang = st.sidebar.selectbox("🌐 🌐Select Language / 选择语言 / Pilih Bahasa", LANGUAGES)
 
 TRANSLATIONS = {
     "中文": {
