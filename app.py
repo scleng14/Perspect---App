@@ -81,7 +81,7 @@ T = translations[lang]
 
 # ----------------- Main Title -----------------
 st.markdown(f"""
-    <h1 style='text-align: center; color: #444444;'>🧠 {T['title']}</h1>
+    <h1 style='text-align: center; color: #444444;'>👁‍🗨 {T['title']}</h1>
     <h4 style='text-align: center; color: #888888;'>{T['subtitle']}</h4>
 """, unsafe_allow_html=True)
 
