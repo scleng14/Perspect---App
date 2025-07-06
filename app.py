@@ -158,8 +158,6 @@ with tabs[2]:
 # ----------------- Tab 4: Filter -----------------
 with tabs[3]:
     st.subheader(f"🧪 {T['nav_filter']}")
-  
-    st.subheader(f"📊 {T['nav_emotion_chart']}")
     try:
         df = pd.read_csv("history.csv")
         chart = df["Emotion"].value_counts().reset_index()
