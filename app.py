@@ -135,10 +135,14 @@ def save_history(username, emotion, confidence, location="Unknown"):
 def show_detection_guide():
     with st.expander("ℹ️ How Emotion Detection Works", expanded=False):
         st.markdown("""
-        *Detection Model:*
-        - Using DeepFace with hybrid CNN architecture
-        - 7 basic emotions: happy, sad, angry, neutral, surprise, fear, disgust
-        - Confidence score shown for each detection
+        *Detection Logic Explained:*
+        😊 Happy: Smile present, cheeks raised
+        😠 Angry: Eyebrows lowered, eyes wide open
+        😐 Neutral: No strong facial movements
+        😢 Sad: Eyebrows raised, lip corners down
+        😲 Surprise: Eyebrows raised, mouth open
+        😨 Fear: Eyes tense, lips stretched
+        🤢 Disgust: Nose wrinkled, upper lip raised
         
         *Tips for Better Results:*
         - Use clear, front-facing images
