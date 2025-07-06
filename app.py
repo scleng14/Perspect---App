@@ -209,8 +209,7 @@ def main():
                     if df.empty:
                         st.info(T['no_history'])
                     else:
-                        keyword = st.text_input(T['filter_user']).strip()
-                        df_filtered = df[df["Username"].str.contains(keyword, case=False)] if keyword else df
+                        df_filtered = df[df["Username"].str.contains(username, case=False)] if username else df
                         st.dataframe(df_filtered.sort_values("timestamp", ascending=False))
                         st.caption(f"{len(df_filtered)} {T['records_shown']}")
                 else:
