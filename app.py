@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ----------------- Page Setup -----------------
-st.set_page_config(page_title="LeadFocal", page_icon="👁‍🗨👁‍🗨", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="LeadFocal", page_icon="👁‍🗨", layout="wide", initial_sidebar_state="expanded")
 
 # ----------------- Language Setup -----------------
 lang = st.sidebar.selectbox("🌐 Select Language", ["English","中文", "Malay"])
@@ -47,7 +47,7 @@ translations = {
         "title": "情绪与位置识别系统",
         "subtitle": "尝试上传本地照片，体验情绪识别与位置推测功能。",
         "username_prompt": "请输入用户名：",
-        "logged_in": " 👤 已登录用户：",
+        "logged_in": "已登录用户：",
         "upload_prompt": "上传图片",
         "detected_emotion": "识别的情绪",
         "estimated_location": "推测的位置",
@@ -77,7 +77,7 @@ translations = {
         "title": "Sistem Pengecaman Emosi dan Lokasi",
         "subtitle": "Cuba muat naik foto tempatan untuk menganalisis emosi dan menganggar lokasi.",
         "username_prompt": "Masukkan nama pengguna anda:",
-        "logged_in": " 👤 Log masuk sebagai:",
+        "logged_in": "Log masuk sebagai:",
         "upload_prompt": "Muat naik imej",
         "detected_emotion": "Emosi Dikesan",
         "estimated_location": "Lokasi Dianggar",
@@ -108,7 +108,7 @@ T = translations[lang]
 
 # ----------------- Main Title -----------------
 st.markdown(f"""
-    <h1 style='text-align: center; color: #444444;'>👁‍🗨 {T['title']}</h1>
+    <h1 style='text-align: center; color: #444444;'>👁‍🗨👁‍🗨 {T['title']}</h1>
     <h4 style='text-align: center; color: #888888;'>{T['subtitle']}</h4>
 """, unsafe_allow_html=True)
 
