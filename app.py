@@ -1,121 +1,87 @@
+# design_demo.py
 import streamlit as st
+import random
 import pandas as pd
-import os
 from datetime import datetime
-from PIL import Image
-from utils.emotion import analyze_emotion
-from utils.gps_utils import extract_gps_location
-from utils.landmark import recognize_landmark
+import plotly.express as px
 
-# ---------------- Page Configuration ----------------
-st.set_page_config(
-    page_title="Emotion & Location Analyzer",
-    page_icon="📍",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# ----------------- Page Setup -----------------
+st.set_page_config(page_title="LeadFocal Demo", page_icon="🧠", layout="wide", initial_sidebar_state="expanded")
 
-# ---------------- Session State ----------------
-if "language" not in st.session_state:
-    st.session_state.language = "English"
+# ----------------- Demo Title -----------------
+st.markdown("""
+    <h1 style='text-align: center; color: #444444;'>🎨 Advanced Streamlit Design Demo</h1>
+    <h4 style='text-align: center; color: #888888;'>Try out interactive elements, layout tricks, and visual designs</h4>
+""", unsafe_allow_html=True)
 
-# ---------------- Language Strings ----------------
-LANGUAGES = {
-    "English": {
-        "upload_title": "Upload Image",
-        "upload_caption": "Upload a photo to detect faces, emotions, and location",
-        "face_detected": "Face Detected",
-        "emotion_result": "Emotion: {} (Confidence: {:.2f}%)",
-        "location_found": "📍 Location: {}",
-        "no_gps": "No GPS info found. Trying landmark recognition...",
-        "landmark_result": "🗼 Landmark: {}",
-        "history": "View History",
-        "timestamp": "Timestamp",
-        "save_success": "✅ Record saved to history.csv",
-        "download": "Download CSV History"
-    },
-    "中文": {
-        "upload_title": "上传图片",
-        "upload_caption": "上传照片以检测人脸、情绪和位置",
-        "face_detected": "检测到人脸",
-        "emotion_result": "情绪：{}（置信度：{:.2f}%）",
-        "location_found": "📍 位置：{}",
-        "no_gps": "未发现 GPS 信息，尝试识别地标...",
-        "landmark_result": "🗼 地标：{}",
-        "history": "查看记录",
-        "timestamp": "时间戳",
-        "save_success": "✅ 已保存至 history.csv",
-        "download": "下载 CSV 记录"
-    },
-    "Malay": {
-        "upload_title": "Muat Naik Imej",
-        "upload_caption": "Muat naik gambar untuk kesan wajah, emosi dan lokasi",
-        "face_detected": "Wajah Dikesan",
-        "emotion_result": "Emosi: {} (Keyakinan: {:.2f}%)",
-        "location_found": "📍 Lokasi: {}",
-        "no_gps": "Tiada GPS. Mencuba pengecaman mercu tanda...",
-        "landmark_result": "🗼 Mercu tanda: {}",
-        "history": "Lihat Sejarah",
-        "timestamp": "Cap Masa",
-        "save_success": "✅ Rekod disimpan ke history.csv",
-        "download": "Muat turun Sejarah CSV"
-    }
-}
+# ----------------- Tabs -----------------
+tabs = st.tabs(["📤 Upload & Image Viewer", "📈 Charts", "🧪 Widgets & Layout", "🌍 Location Map", "📦 Other Tricks"])
 
-# ---------------- Language Switcher ----------------
-with st.container():
-    cols = st.columns(3)
-    for i, lang in enumerate(LANGUAGES):
-        if cols[i].button(lang):
-            st.session_state.language = lang
-current_lang = LANGUAGES[st.session_state.language]
+# ----------------- Tab 1: Upload & Preview -----------------
+with tabs[0]:
+    st.subheader("📤 Upload Image(s)")
+    files = st.file_uploader("Upload images (you can select multiple)", type=["jpg", "png"], accept_multiple_files=True)
+    if files:
+        for file in files:
+            st.image(file, caption=file.name, use_column_width=True)
 
-st.title(current_lang["upload_title"])
-st.caption(current_lang["upload_caption"])
+# ----------------- Tab 2: Charts -----------------
+with tabs[1]:
+    st.subheader("📊 Emotion Distribution Example")
+    dummy_data = pd.DataFrame({
+        "Emotion": ["Happy", "Sad", "Neutral", "Angry"],
+        "Count": [random.randint(5, 15) for _ in range(4)]
+    })
+    fig = px.pie(dummy_data, names="Emotion", values="Count", title="Emotion Analysis")
+    st.plotly_chart(fig)
 
-# ---------------- Upload Image ----------------
-uploaded_image = st.file_uploader("", type=["jpg", "jpeg", "png"])
-if uploaded_image:
-    image = Image.open(uploaded_image)
-    st.image(image, use_column_width=True)
+# ----------------- Tab 3: Widgets & Layout -----------------
+with tabs[2]:
+    st.subheader("🧪 Try Widgets")
 
-    # ----- Emotion -----
-    result = analyze_emotion(image)
-    if result:
-        st.success(current_lang["face_detected"])
-        st.write(current_lang["emotion_result"].format(result["emotion"], result["confidence"] * 100))
-    else:
-        st.warning("No face detected.")
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.markdown("**🔘 Choose emotion:**")
+        emotion = st.radio("Emotion?", ["😊 Happy", "😢 Sad", "😡 Angry"], horizontal=True)
 
-    # ----- Location -----
-    location = extract_gps_location(image)
-    if location:
-        st.info(current_lang["location_found"].format(location))
-    else:
-        st.warning(current_lang["no_gps"])
-        landmark = recognize_landmark(image)
-        if landmark:
-            st.info(current_lang["landmark_result"].format(landmark))
-            location = landmark
-        else:
-            location = "Unknown"
+        st.markdown("**🎚️ Set confidence level:**")
+        level = st.select_slider("Confidence", options=["Low", "Medium", "High"])
 
-    # ----- Save History -----
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    emotion = result["emotion"] if result else "None"
-    record = pd.DataFrame([[timestamp, emotion, location]], columns=["timestamp", "emotion", "location"])
+        st.markdown("**📅 Select date:**")
+        date = st.date_input("Date of entry")
 
-    if os.path.exists("history.csv"):
-        old = pd.read_csv("history.csv")
-        record = pd.concat([old, record], ignore_index=True)
-    record.to_csv("history.csv", index=False)
-    st.success(current_lang["save_success"])
+        st.markdown("**⌛ Progress bar example:**")
+        progress = st.progress(0)
+        for i in range(100):
+            progress.progress(i + 1)
 
-# ---------------- History Page ----------------
-st.subheader(current_lang["history"])
-if os.path.exists("history.csv"):
-    df = pd.read_csv("history.csv")
-    st.dataframe(df)
-    st.download_button(current_lang["download"], df.to_csv(index=False), file_name="history.csv")
-else:
-    st.info("No history found yet.")
+    with col2:
+        st.success("✅ Everything looks good!")
+        st.info("ℹ️ Use left controls to customize analysis")
+        st.warning("⚠️ No image uploaded yet")
+
+# ----------------- Tab 4: Map -----------------
+with tabs[3]:
+    st.subheader("📍 Random Location Viewer")
+    map_data = pd.DataFrame({
+        'lat': [3.1390 + random.uniform(-0.01, 0.01)],
+        'lon': [101.6869 + random.uniform(-0.01, 0.01)]
+    })
+    st.map(map_data)
+
+# ----------------- Tab 5: Miscellaneous -----------------
+with tabs[4]:
+    st.subheader("📦 Extra Design Examples")
+    with st.expander("📘 Click to see instructions"):
+        st.markdown("""
+        **This page demonstrates:**
+        - Tabs and layout
+        - Charts using Plotly
+        - File uploader and image viewer
+        - Toggle, radio, slider, date input
+        - Map with coordinates
+        - Message styles: success/info/warning
+        """)
+
+    st.toast("🔔 This is a toast message!", icon="✅")
+    st.download_button("⬇️ Download Dummy CSV", data=dummy_data.to_csv(), file_name="dummy.csv")
