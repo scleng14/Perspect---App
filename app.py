@@ -153,28 +153,58 @@ def detect_emotion(img):
     return emotions, faces
 
 def draw_detections(img, emotions, faces):
-    color_map = {"happy": (0,255,0), "neutral": (255,255,0), "sad": (0,0,255), "angry": (0,165,255)}
-    output = img.copy()
-    for ((x,y,w,h), emo) in zip(faces, emotions):
-        color = color_map.get(emo, (255,255,255))
-        cv2.rectangle(output, (x,y), (x+w,y+h), color, 3)
-        cv2.putText(output, emo.upper(), (x+5,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
-    return output
+    """Draw detection boxes with English labels"""
+    output_img = img.copy()
+    
+    # Color mapping
+    color_map = {
+        "happy": (0, 255, 0),     # green
+        "neutral": (255, 255, 0), # yellow
+        "sad": (0, 0, 255),       # red
+        "angry": (0, 165, 255)    # orange
+    }
+    
+    for i, ((x,y,w,h), emotion) in enumerate(zip(faces, emotions)):
+        color = color_map.get(emotion, (255, 255, 255))
+        
+        # Draw face rectangle
+        cv2.rectangle(output_img, (x,y), (x+w,y+h), color, 3)
+        
+        # Add emotion label
+        cv2.putText(output_img, 
+                   emotion.upper(), 
+                   (x+5, y-10), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 
+                   0.8, 
+                   color, 
+                   2)
+    
+    return output_img
 
-def show_detection_guide(show_full):
+def show_detection_guide(show_full_guide=True):
+    """Show detection guide in expandable section"""
     with st.expander("ℹ️ How Emotion Detection Works", expanded=False):
-        if show_full:
+        if show_full_guide:
             st.markdown("""
-                - 😊 *Happy*: Smile detected
-                - 😠 *Angry*: Eyes wide open & high
-                - 😢 *Sad*: Eyes higher than usual
-                - 😐 *Neutral*: Default if none above
-            """)
-        st.markdown("""
-            **Tips:**
+            *Detection Logic Explained:*
+            
+            - 😊 *Happy*: Detected when smile is present
+            - 😠 *Angry*: Detected when eyes are wide open and positioned in upper face
+            - 😐 *Neutral*: Default state when no strong indicators found
+            - 😢 *Sad*: Detected when eyes are positioned higher than normal
+            
+            *Tips for Better Results:*
             - Use clear, front-facing images
             - Ensure good lighting
-        """)
+            - Avoid obstructed faces
+            """)
+        else:
+            st.markdown("""
+            *Tips for Better Results:*
+            - Use clear, front-facing images
+            - Ensure good lighting
+            - Avoid obstructed faces
+            """)
 
 def save_history(username, emotion, location):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
