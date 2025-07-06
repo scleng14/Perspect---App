@@ -1,3 +1,5 @@
+# ai_emotion_location_app.py
+
 import streamlit as st
 import cv2
 import numpy as np
@@ -7,27 +9,28 @@ from datetime import datetime
 import random
 import logging
 from geopy.geocoders import Nominatim
+import os
+from io import BytesIO
 
 # ----------------- 初始化设置 -----------------
 st.set_page_config(
-    page_title="AI情绪与位置检测系统",
+    page_title="AI Emotion & Location Detector",
     page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ----------------- 多语言支持 -----------------
 LANGUAGES = ["中文", "English", "Malay"]
-lang = st.sidebar.selectbox("🌐 选择语言", LANGUAGES)
+lang = st.sidebar.selectbox("🌐 Select Language / 选择语言 / Pilih Bahasa", LANGUAGES)
 
 TRANSLATIONS = {
     "中文": {
         "title": "AI情绪与位置检测系统",
-        "upload_guide": "上传照片分析面部表情并推测位置",
+        "upload_guide": "上传照片分析面部表情并推测位置（带GPS或地标）",
         "username": "用户名",
         "enter_username": "输入用户名",
         "welcome": "欢迎",
@@ -40,11 +43,12 @@ TRANSLATIONS = {
         "processed_image": "处理后的图片",
         "no_faces": "未检测到人脸",
         "error_processing": "图片处理错误",
-        "debug_info": "调试信息"
+        "debug_info": "调试信息",
+        "input_username_continue": "请输入用户名继续"
     },
     "English": {
         "title": "AI Emotion & Location Detector",
-        "upload_guide": "Upload a photo to analyze facial expressions and estimate location",
+        "upload_guide": "Upload a photo to analyze facial expressions and estimate location (via GPS or landmark)",
         "username": "Username",
         "enter_username": "Enter your username",
         "welcome": "Welcome",
@@ -57,11 +61,12 @@ TRANSLATIONS = {
         "processed_image": "Processed Image",
         "no_faces": "No faces detected",
         "error_processing": "Error processing image",
-        "debug_info": "Debug Info"
+        "debug_info": "Debug Info",
+        "input_username_continue": "Please enter a username to continue"
     },
     "Malay": {
         "title": "Sistem Pengesanan Emosi & Lokasi AI",
-        "upload_guide": "Muat naik foto untuk analisis ekspresi muka dan anggaran lokasi",
+        "upload_guide": "Muat naik foto untuk analisis ekspresi muka dan anggaran lokasi (GPS atau mercu tanda)",
         "username": "Nama pengguna",
         "enter_username": "Masukkan nama pengguna",
         "welcome": "Selamat datang",
@@ -74,7 +79,8 @@ TRANSLATIONS = {
         "processed_image": "Imej Diproses",
         "no_faces": "Tiada muka dikesan",
         "error_processing": "Ralat memproses imej",
-        "debug_info": "Maklumat Debug"
+        "debug_info": "Maklumat Debug",
+        "input_username_continue": "Masukkan nama pengguna untuk meneruskan"
     }
 }
 T = TRANSLATIONS[lang]
@@ -83,10 +89,10 @@ T = TRANSLATIONS[lang]
 @st.cache_resource
 def load_face_cascade():
     try:
-        return cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        return cv2.CascadeClassifier("models/haarcascade_frontalface_default.xml")
     except Exception as e:
         logger.error(f"模型加载失败: {e}")
-        st.error("无法加载人脸检测模型")
+        st.error("Failed to load face detection model")
         return None
 
 # ----------------- 核心功能 -----------------
@@ -100,69 +106,34 @@ def detect_faces(img_cv, face_cascade):
         return np.array([])
 
 def analyze_emotion(faces):
-    """简化版情绪分析（实际项目建议用DeepFace）"""
     return ["happy" if random.random() > 0.5 else "neutral" for _ in faces]
 
-def estimate_location():
-    """随机位置生成（实际项目可用GPS元数据）"""
-    cities = ["北京", "上海", "广州", "深圳", "成都"]
-    return f"{random.choice(cities)}, 中国"
-
-# ----------------- 界面组件 -----------------
-def show_analysis_results(uploaded_file, username, face_cascade):
+def extract_gps_location(img):
     try:
-        img = Image.open(uploaded_file)
-        img_cv = np.array(img)
-        
-        # 确保图像为3通道
-        if len(img_cv.shape) == 2:
-            img_cv = cv2.cvtColor(img_cv, cv2.COLOR_GRAY2BGR)
-        elif img_cv.shape[2] == 4:
-            img_cv = img_cv[:, :, :3]
+        exif = img._getexif()
+        if not exif:
+            return None
+        gps_info = exif.get(34853)
+        if not gps_info:
+            return None
 
-        col1, col2 = st.columns([1, 2])
+        def convert_to_degrees(value):
+            d, m, s = value
+            return d[0] / d[1] + m[0] / m[1] / 60 + s[0] / s[1] / 3600
 
-        with col1:
-            st.subheader(T["analysis_results"])
-            
-            faces = detect_faces(img_cv, face_cascade)
-            if len(faces) == 0:
-                st.warning(T["no_faces"])
-                return
+        lat = convert_to_degrees(gps_info[2])
+        if gps_info[1] == 'S':
+            lat = -lat
+        lon = convert_to_degrees(gps_info[4])
+        if gps_info[3] == 'W':
+            lon = -lon
 
-            emotions = analyze_emotion(faces)
-            location = estimate_location()
-            
-            st.metric(T["detected_emotion"], ", ".join(emotions))
-            st.metric(T["estimated_location"], location)
-
-            # 保存结果
-            save_to_history(username, emotions[0], location)
-            
-            # 下载按钮
-            st.download_button(
-                label=T["download_results"],
-                data=pd.DataFrame({
-                    "情绪": emotions,
-                    "位置": [location]*len(emotions)
-                }).to_csv(index=False),
-                file_name="analysis_results.csv"
-            )
-
-        with col2:
-            tab1, tab2 = st.tabs([T["original_image"], T["processed_image"]])
-            
-            with tab1:
-                st.image(img, use_column_width=True)
-            
-            with tab2:
-                for (x, y, w, h) in faces:
-                    cv2.rectangle(img_cv, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                st.image(img_cv, channels="BGR", use_column_width=True)
-
+        geolocator = Nominatim(user_agent="emotion_location_app")
+        location = geolocator.reverse((lat, lon), language='en')
+        return location.address if location else None
     except Exception as e:
-        logger.error(f"分析错误: {e}")
-        st.error(T["error_processing"])
+        logger.warning(f"GPS读取失败: {e}")
+        return None
 
 def save_to_history(username, emotion, location):
     try:
@@ -172,52 +143,80 @@ def save_to_history(username, emotion, location):
             "location": location,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }])
-        
-        if os.path.exists("history.csv"):
-            history = pd.read_csv("history.csv")
-            history = pd.concat([history, new_record])
-        else:
-            history = new_record
-            
-        history.to_csv("history.csv", index=False)
+        new_record.to_csv("history.csv", mode='a', index=False, header=not os.path.exists("history.csv"))
     except Exception as e:
         logger.error(f"保存历史记录失败: {e}")
+
+# ----------------- 显示分析结果 -----------------
+def show_analysis_results(uploaded_file, username, face_cascade):
+    try:
+        img = Image.open(uploaded_file)
+        img_cv = np.array(img.convert("RGB"))
+
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            st.subheader(T["analysis_results"])
+
+            faces = detect_faces(img_cv, face_cascade)
+            if len(faces) == 0:
+                st.warning(T["no_faces"])
+                return
+
+            emotions = analyze_emotion(faces)
+            location = extract_gps_location(img) or "Unknown"
+
+            st.metric(T["detected_emotion"], ", ".join(emotions))
+            st.metric(T["estimated_location"], location)
+
+            save_to_history(username, emotions[0], location)
+
+            csv_data = pd.DataFrame({"Emotion": emotions, "Location": [location]*len(emotions)}).to_csv(index=False)
+            st.download_button(label=T["download_results"], data=csv_data, file_name="analysis_results.csv")
+
+        with col2:
+            tab1, tab2 = st.tabs([T["original_image"], T["processed_image"]])
+            with tab1:
+                st.image(img, use_column_width=True)
+            with tab2:
+                for (x, y, w, h) in faces:
+                    cv2.rectangle(img_cv, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                st.image(img_cv, channels="BGR", use_column_width=True)
+    except Exception as e:
+        logger.error(f"分析错误: {e}")
+        st.error(T["error_processing"])
 
 # ----------------- 主程序 -----------------
 def main():
     st.title(f"🌍 {T['title']}")
     st.caption(T["upload_guide"])
-    
+
     face_cascade = load_face_cascade()
     if face_cascade is None:
         return
-    
-    # 用户登录
+
     if "username" not in st.session_state:
         st.session_state.username = ""
-    
+
     with st.sidebar:
         username = st.text_input(T["enter_username"], key="username_input")
         if username:
             st.session_state.username = username
             st.success(f"{T['welcome']} {username}")
-    
-    # 调试信息
+
     with st.expander(T["debug_info"]):
-        st.write(f"OpenCV版本: {cv2.__version__}")
-        st.write(f"Streamlit版本: {st.__version__}")
-        st.write("会话状态:", st.session_state)
-    
-    # 主界面
+        st.write(f"OpenCV version: {cv2.__version__}")
+        st.write(f"Streamlit version: {st.__version__}")
+        st.write("Session State:", st.session_state)
+
     if st.session_state.username:
         uploaded_file = st.file_uploader(T["upload_image"], type=["jpg", "jpeg", "png"])
         if uploaded_file:
             show_analysis_results(uploaded_file, st.session_state.username, face_cascade)
     else:
-        st.warning("请输入用户名继续")
+        st.warning(T["input_username_continue"])
 
 if __name__ == "__main__":
-    import os
     if not os.path.exists(".streamlit"):
         os.makedirs(".streamlit")
     main()
