@@ -23,10 +23,9 @@ translations = {
         "estimated_location": "Estimated Location",
         "start_prompt": "Please enter your username to begin.",
         "nav_home": "Home",
-        "nav_history": "History",
-        "nav_emotion_chart": "Emotion Chart",
         "nav_location_map": "Location Map",
-        "nav_design_demo": "Design Demo",
+        "nav_history": "History",
+        "nav_filter": "Search & Filter",
         "upload_history": "Upload History",
         "no_history": "No history available yet.",
         "filter_user": "Filter by username (optional):",
@@ -44,10 +43,9 @@ translations = {
         "estimated_location": "推测的位置",
         "start_prompt": "请输入用户名以开始。",
         "nav_home": "主页",
-        "nav_history": "历史记录",
-        "nav_emotion_chart": "情绪图表",
         "nav_location_map": "位置地图",
-        "nav_design_demo": "设计演示",
+        "nav_history": "历史记录",
+        "nav_filter": "查找 & 筛选",
         "upload_history": "上传历史",
         "no_history": "暂无历史记录。",
         "filter_user": "按用户名筛选（可选）：",
@@ -65,10 +63,9 @@ translations = {
         "estimated_location": "Lokasi Dianggar",
         "start_prompt": "Sila masukkan nama pengguna untuk bermula.",
         "nav_home": "Halaman Utama",
-        "nav_history": "Sejarah",
-        "nav_emotion_chart": "Carta Emosi",
         "nav_location_map": "Peta Lokasi",
-        "nav_design_demo": "Demo Reka Bentuk",
+        "nav_history": "Sejarah",
+        "nav_filter": "Cari & Tapis",
         "upload_history": "Sejarah Muat Naik",
         "no_history": "Tiada sejarah tersedia buat masa ini.",
         "filter_user": "Tapis mengikut nama pengguna (pilihan):",
@@ -88,13 +85,14 @@ st.markdown(f"""
 # ----------------- Tabs -----------------
 tabs = st.tabs([
     f"🏠 {T['nav_home']}",
+    f"📊 {T['nav_location_map']}",
     f"📂 {T['nav_history']}",
-    f"📊 {T['nav_emotion_chart']}",
-    f"🧪 {T['nav_design_demo']}"
+    f"📊 {T['nav_filter']}"
 ])
 
 # ----------------- Username Input -----------------
-username = st.sidebar.text_input(f"👤 {T['username_prompt']}")
+if username:
+        st.sidebar.success(f"👤 {T['logged_in']} {username}")
 
 # ----------------- Utilities -----------------
 def analyze_emotion(image):
@@ -117,8 +115,8 @@ def save_history(username, emotion, location):
 
 # ----------------- Tab 1: Home -----------------
 with tabs[0]:
+    username = st.text_input(f"👤 {T['username_prompt']}")
     if username:
-        st.success(f"{T['logged_in']} {username}")
         uploaded_file = st.file_uploader(f"📤 {T['upload_prompt']}", type=["jpg", "jpeg", "png"])
         if uploaded_file:
             st.image(uploaded_file, caption="Image Preview", use_column_width=True)
@@ -132,8 +130,15 @@ with tabs[0]:
     else:
         st.warning(T["start_prompt"])
 
-# ----------------- Tab 2: History -----------------
+# ----------------- Tab 2: Location Map -----------------
 with tabs[1]:
+    st.map(pd.DataFrame({
+        'lat': [3.1390 + random.uniform(-0.01, 0.01)],
+        'lon': [101.6869 + random.uniform(-0.01, 0.01)]
+    }))
+
+# ----------------- Tab 3: History -----------------
+with tabs[2]:
     st.header(f"📜 {T['upload_history']}")
     if username:
         try:
@@ -153,8 +158,10 @@ with tabs[1]:
     else:
         st.warning(T["enter_username_history"])
 
-# ----------------- Tab 3: Charts -----------------
-with tabs[2]:
+# ----------------- Tab 4: Filter -----------------
+with tabs[3]:
+    st.subheader(f"🧪 {T['nav_filter']}")
+  
     st.subheader(f"📊 {T['nav_emotion_chart']}")
     try:
         df = pd.read_csv("history.csv")
@@ -165,9 +172,6 @@ with tabs[2]:
     except:
         st.warning("📂 No data available to generate chart.")
 
-# ----------------- Tab 4: Design Demo -----------------
-with tabs[3]:
-    st.subheader(f"🧪 {T['nav_design_demo']}")
 
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -193,8 +197,3 @@ with tabs[3]:
     st.toast("🔔 This is a toast message!", icon="✅")
     dummy_data = pd.DataFrame({"Emotion": ["Happy", "Sad"], "Count": [10, 8]})
     st.download_button("⬇️ Download Dummy CSV", data=dummy_data.to_csv(), file_name="dummy.csv")
-
-    st.map(pd.DataFrame({
-        'lat': [3.1390 + random.uniform(-0.01, 0.01)],
-        'lon': [101.6869 + random.uniform(-0.01, 0.01)]
-    }))
