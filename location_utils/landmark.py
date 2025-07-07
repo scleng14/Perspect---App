@@ -13,7 +13,7 @@ def load_models():
         CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     )
 
-processor, model = load_models()  
+clip_processor, clip_model = load_models() 
 
 # Predefined landmarks with name, city, latitude, longitude
 LANDMARK_KEYWORDS = {
