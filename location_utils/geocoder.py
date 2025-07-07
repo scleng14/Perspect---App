@@ -5,8 +5,7 @@ import time
 
 geolocator = Nominatim(
     user_agent="geoai_app_v2",
-    timeout=10,
-    country_codes="my"  # 限定马来西亚
+    timeout=10
 )
 reverse_geocode = RateLimiter(geolocator.reverse, min_delay_seconds=1)
 
