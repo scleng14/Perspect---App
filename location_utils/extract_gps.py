@@ -6,22 +6,27 @@ from PIL.ExifTags import TAGS, GPSTAGS
 def extract_gps(image_path):
     try:
         image = Image.open(image_path)
-        exif_data = image._getexif()
-        if not exif_data:
+        
+ # Handle different EXIF formats
+        if hasattr(image, '_getexif'):
+            exif_data = image._getexif()
+        elif hasattr(image, 'getexif'):
+            exif_data = image.getexif()
+        else:
             return None
+            
+        if not exif_data:
+            # Try alternative method for some formats
+            try:
+                exif_data = image.info.get('exif')
+                if exif_data:
+                    from PIL.ExifTags import Exif
+                    exif_data = Exif().get(exif_data)
+            except:
+                return None
         
         gps_info = {}
-        for tag_id, value in exif_data.items():
-            tag = TAGS.get(tag_id, tag_id)
-            if tag == "GPSInfo":
-                for key in value:
-                    sub_tag = GPSTAGS.get(key, key)
-                    gps_info[sub_tag] = value[key]
-        return gps_info if gps_info else None
-    except Exception as e:
-        print(f"[GPS ERROR] {e}")
-        return None
-
+        # Rest of your existing code...
 def convert_gps(gps_info):
     try:
         def _safe_convert(coord, ref):
