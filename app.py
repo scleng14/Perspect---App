@@ -100,16 +100,16 @@ def main():
                     else:
                         landmark = detect_landmark(temp_path)
                         if landmark:
-                            coords_and_method = query_landmark_coords(landmark)
-                            if coords_and_method is not None:
-                                (lat, lon), method = coords_and_method
+                            result = query_landmark_coords(landmark)
+                            if result is not None:
+                                (lat, lon), method = result
                                 location = f"{landmark} ({lat:.4f}, {lon:.4f})"
                             else:
-                                location = "Location not found"
-                                method = "None"
-                        else:
-                            location = "Location not found"
-                            method = "None"
+                                location = f"{landmark} (coordinates not found)"
+                                method = "Landmark detected"
+                    else:
+                        location = "Location not found"
+                        method = "None"
 
                     col1, col2 = st.columns([1, 2])
                     with col1:
