@@ -8,9 +8,10 @@ import random
 import os
 import plotly.express as px
 from emotion_utils.detector import EmotionDetector
-from location_utils.extract_gps import extract_gps, convert_gps
-from location_utils.geocoder import get_address_from_coords  
+import tempfile
+from location_utils.extract_gps import extract_gps, convert_gps, get_address_from_coords
 from location_utils.landmark import detect_landmark, query_landmark_coords
+
 
 # ----------------- App Configuration -----------------
 st.set_page_config(
@@ -56,26 +57,6 @@ def show_detection_guide():
         - Avoid obstructed faces
         """)
 
-def detect_location(image: Image.Image):
-    gps = extract_gps(image)
-    if gps:
-        coords = convert_gps(gps)
-        if coords:
-            address = get_address_from_coords(coords)
-            if address:
-                return address, "GPS"
-    
-    landmark_name = detect_landmark(image)
-    if landmark_name:
-        coords, source = query_landmark_coords(landmark_name)
-        if coords:
-            address = get_address_from_coords(coords)
-            if address:
-                return address, f"Landmark ({source})"
-        return landmark_name, "Landmark name (unverified)"
-    
-    return "Unknown", "No GPS or Landmark detected"
-
 def sidebar_design(username):
     if username:
         st.sidebar.success(f"👤 Logged in as: {username}")
@@ -99,10 +80,31 @@ def main():
             uploaded_file = st.file_uploader("Upload an image (JPG/PNG)", type=["jpg", "png"])
             if uploaded_file:
                 try:
-                    image = Image.open(uploaded_file)
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+                        tmp_file.write(uploaded_file.read())
+                        temp_path = tmp_file.name 
+                        
+                    image = Image.open(tmp_path).convert("RGB")
                     img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     detections = detector.detect_emotions(img)
                     detected_img = detector.draw_detections(img, detections)
+
+                    location = "Unknown"
+                    method = ""
+                    gps = extract_gps(tmp_path)
+                    if gps:
+                        lat, lon = convert_gps(gps)
+                        location = get_address_from_coords(lat, lon)
+                        method = "GPS Metadata"
+                    else:
+                        landmark = detect_landmark(tmp_path)
+                        if landmark:
+                            (lat, lon), method = query_landmark_coords(landmark)
+                            location = f"{landmark} ({lat:.4f}, {lon:.4f})"
+                        else:
+                            location = "Location not found"
+                            method = "None"
+
 
                     col1, col2 = st.columns([1, 2])
                     with col1:
