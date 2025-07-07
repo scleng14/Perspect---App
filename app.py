@@ -84,8 +84,14 @@ def main():
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
                         tmp_file.write(uploaded_file.read())
                         temp_path = tmp_file.name 
-                        
-                    image = Image.open(temp_path).convert("RGB")
+                    try:
+                        image = Image.open(temp_path).convert("RGB")
+                    finally:
+                        try:
+                            os.unlink(temp_path)
+                        except:
+                            pass    
+                    
                     img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     detections = detector.detect_emotions(img)
                     detected_img = detector.draw_detections(img, detections)
