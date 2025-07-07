@@ -59,9 +59,7 @@ def sidebar_design(username):
     st.sidebar.markdown("- Visualize your emotion distribution")
     st.sidebar.divider()
     st.sidebar.info("Enhance your experience by ensuring clear, well-lit facial images.")
-    st.sidebar.caption("Need help? Refer to the info sections inside each tab for guidance.")
-    st.sidebar.caption("Feedback? Reach out to our support team.")
-
+  
 def main():
     st.title("👁‍🗨 AI Emotion & Location Detector")
     st.caption("Upload a photo to detect facial emotions and estimate location.")
