@@ -13,7 +13,7 @@ def get_address_from_coords(coords):
     """Convert coordinates to address"""
     for attempt in range(3):  # Retry logic
         try:
-            location = reverse_geocode(coords, language='en'，exactly_one=True, timeout=15)
+            location = reverse_geocode(coords, language='en', exactly_one=True, timeout=15)
             return location.address if location else "Unknown location"
         except Exception as e:
             print(f"Geocoding attempt {attempt+1} failed: {e}")
