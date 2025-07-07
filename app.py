@@ -85,20 +85,20 @@ def main():
                         tmp_file.write(uploaded_file.read())
                         temp_path = tmp_file.name 
                         
-                    image = Image.open(tmp_path).convert("RGB")
+                    image = Image.open(temp_path).convert("RGB")
                     img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     detections = detector.detect_emotions(img)
                     detected_img = detector.draw_detections(img, detections)
 
                     location = "Unknown"
                     method = ""
-                    gps = extract_gps(tmp_path)
+                    gps = extract_gps(temp_path)
                     if gps:
                         lat, lon = convert_gps(gps)
                         location = get_address_from_coords(lat, lon)
                         method = "GPS Metadata"
                     else:
-                        landmark = detect_landmark(tmp_path)
+                        landmark = detect_landmark(temp_path)
                         if landmark:
                             (lat, lon), method = query_landmark_coords(landmark)
                             location = f"{landmark} ({lat:.4f}, {lon:.4f})"
