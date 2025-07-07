@@ -40,6 +40,7 @@ LANDMARK_KEYWORDS = {
     "gunung kinabalu": ("Mount Kinabalu", "Sabah", 6.0754, 116.5584),
 
     # Asia
+    "Great Wall": ["Great Wall of China", "China", 40.4319, 116.5704],
     "burj khalifa": ("Burj Khalifa", "Dubai", 25.1972, 55.2744),
     "taipei 101": ("Taipei 101", "Taipei", 25.0330, 121.5654),
     "marina bay sands": ("Marina Bay Sands", "Singapore", 1.2834, 103.8607),
@@ -53,12 +54,14 @@ LANDMARK_KEYWORDS = {
     "golden gate bridge": ("Golden Gate Bridge", "San Francisco", 37.8199, -122.4783),
     "times square": ("Times Square", "New York", 40.7580, -73.9855),
     "hollywood sign": ("Hollywood Sign", "Los Angeles", 34.1341, -118.3215),
+    "Statue of Liberty": ["Statue of Liberty", "New York", 40.6892, -74.0445],
 
     # Others
     "machu picchu": ("Machu Picchu", "Peru", -13.1631, -72.5450),
     "christ the redeemer": ("Christ the Redeemer", "Rio de Janeiro", -22.9519, -43.2105),
     "opera house": ("Sydney Opera House", "Sydney", -33.8568, 151.2153),
     "sydney opera house": ("Sydney Opera House", "Sydney", -33.8568, 151.2153),
+    "Eiffel Tower": ["Eiffel Tower", "Paris", 48.8584, 2.2945],
     "taj mahal": ("Taj Mahal", "Agra", 27.1751, 78.0421)
 }
 
@@ -76,7 +79,10 @@ def detect_landmark(image_path):
         probs = logits_per_image.softmax(dim=1).cpu().numpy().flatten()
 
     best_idx = probs.argmax()
-    if probs[best_idx] > 0.3:  # Confidence threshold
+    best_prob = probs[best_idx]
+
+    print(f"[CLIP] Top match: {candidates[best_idx]} ({best_prob:.2f})")
+    if best_prob > 0.3:  # Confidence threshold
         return candidates[best_idx]
     return None
 
@@ -100,9 +106,12 @@ def query_landmark_coords(landmark_name):
         if data["elements"]:
             element = data["elements"][0]
             center = element.get("center", {})
+            print(f"[Overpass] Found center for {landmark_name}: {center}")
             return (center.get("lat"), center.get("lon")), "Overpass API"
+         else:
+            print(f"[Overpass] No results found for: {landmark_name}")
     except Exception as e:
         print(f"[OVERPASS ERROR] {e}")
 
-    return None, "Query Failed"
+    return None, "not found"
 
