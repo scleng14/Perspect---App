@@ -74,57 +74,38 @@ LANDMARK_KEYWORDS = {
 
 OVERPASS_URL = "http://overpass-api.de/api/interpreter"
 
-def detect_landmark(image_path):
+def detect_landmark(image_path: str) -> str | None:
+    """
+    Use CLIP model to match the image with a predefined list of landmarks.
+    Returns the best matched keyword if confidence > 0.3, else None.
+    """
     try:
         image = Image.open(image_path).convert("RGB")
-    
-        malaysia_landmarks = [k for k in LANDMARK_KEYWORDS 
-                            if isinstance(LANDMARK_KEYWORDS[k][1], str) 
-                            and "malaysia" in LANDMARK_KEYWORDS[k][1].lower()]
-        
-        if malaysia_landmarks:
-            inputs = processor(
-                text=malaysia_landmarks,
-                images=image,
-                return_tensors="pt",
-                padding=True
-            )
-        
-        with torch.no_grad():
-            outputs = model(**inputs)
-            probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
-        
-        best_idx = probs.argmax()
-        if probs[best_idx] > 0.3: 
-            return malaysia_landmarks[best_idx]
-        
-        all_landmarks = list(LANDMARK_KEYWORDS.keys())
-        inputs = processor(
-            text=all_landmarks,
-            images=image,
-            return_tensors="pt",
-            padding=True
-        )
+        keywords = list(LANDMARK_KEYWORDS.keys())
 
-         with torch.no_grad():
-            outputs = model(**inputs)
+        inputs = clip_processor(text=keywords, images=image, return_tensors="pt", padding=True)
+        with torch.no_grad():
+            outputs = clip_model(**inputs)
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
-        
+
         best_idx = probs.argmax()
         if probs[best_idx] > 0.3:
-            return all_landmarks[best_id
-        return None
-    
+            print(f"[CLIP MATCH] {keywords[best_idx]} ({probs[best_idx]:.2f})")
+            return keywords[best_idx]
+        else:
+            print(f"[CLIP LOW CONFIDENCE] Best={keywords[best_idx]} ({probs[best_idx]:.2f})")
     except Exception as e:
-        print(f"[LANDMARK ERROR] {str(e)}")
-        return None
+        print(f"[CLIP ERROR] {e}")
+    return None
 
-def query_landmark_coords(landmark_name):
+def query_landmark_coords(landmark_name: str) -> tuple | None:
+    """
+    Return (lat, lon), source if landmark name is found in predefined list or Overpass API.
+    """
     if landmark_name in LANDMARK_KEYWORDS:
         _, _, lat, lon = LANDMARK_KEYWORDS[landmark_name]
-        return (lat, lon), "Predefined Coordinates"
+        return (lat, lon), "Predefined"
 
-    # Use Overpass API if not in the predefined list
     query = f"""
     [out:json][timeout:25];
     (
@@ -133,18 +114,15 @@ def query_landmark_coords(landmark_name):
     );
     out center;
     """
+
     try:
         response = requests.post(OVERPASS_URL, data=query, timeout=15)
         data = response.json()
         if data["elements"]:
             element = data["elements"][0]
             center = element.get("center", {})
-            print(f"[Overpass] Found center for {landmark_name}: {center}")
-            return (center.get("lat"), center.get("lon")), "Overpass API"
-         else:
-            print(f"[Overpass] No results found for: {landmark_name}")
+            return (center.get("lat"), center.get("lon")), "Overpass"
     except Exception as e:
         print(f"[OVERPASS ERROR] {e}")
 
-    return None, "not found"
-
+    return None, "Not Found"
