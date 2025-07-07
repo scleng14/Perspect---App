@@ -1,5 +1,5 @@
 # location_utils/landmark.py
-
+import streamlit as st
 import requests
 from transformers import CLIPProcessor, CLIPModel
 from PIL import Image
