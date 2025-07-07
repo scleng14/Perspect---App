@@ -117,7 +117,6 @@ def main():
                             for i, (emo, conf) in enumerate(zip(emotions, confidences)):
                                 st.write(f"- Face {i + 1}: {emo} ({conf}%)")
                             show_detection_guide()
-                            location, method = detect_location(image)
                             st.write(f"📍 Estimated Location: **{location}** ({method})")
                             save_history(username, emotions[0], confidences[0], "Unknown")
                         else:
