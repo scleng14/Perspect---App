@@ -28,7 +28,7 @@ def get_detector():
 
 detector = get_detector()
 
-def save_history(username, emotion, confidence, location="Unknown"):
+def save_history(username, emotion, confidence, location):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df = pd.DataFrame([[username, emotion, confidence, location, now]], 
                      columns=["Username","Emotion","Confidence","Location","timestamp"])
