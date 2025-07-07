@@ -8,6 +8,8 @@ import random
 import os
 import plotly.express as px
 from emotion_utils.detector import EmotionDetector
+from location_utils.extract_gps import extract_gps, convert_gps, get_address_from_coords
+from location_utils.landmark import detect_landmark, query_landmark_coords
 
 # ----------------- App Configuration -----------------
 st.set_page_config(
@@ -53,6 +55,26 @@ def show_detection_guide():
         - Avoid obstructed faces
         """)
 
+def detect_location(image: Image.Image):
+    gps = extract_gps(image)
+    if gps:
+        coords = convert_gps(gps)
+        if coords:
+            address = get_address_from_coords(coords)
+            if address:
+                return address, "GPS"
+    
+    landmark_name = detect_landmark(image)
+    if landmark_name:
+        coords, source = query_landmark_coords(landmark_name)
+        if coords:
+            address = get_address_from_coords(coords)
+            if address:
+                return address, f"Landmark ({source})"
+        return landmark_name, "Landmark name (unverified)"
+    
+    return "Unknown", "No GPS or Landmark detected"
+
 def sidebar_design(username):
     if username:
         st.sidebar.success(f"👤 Logged in as: {username}")
@@ -91,6 +113,8 @@ def main():
                             for i, (emo, conf) in enumerate(zip(emotions, confidences)):
                                 st.write(f"- Face {i + 1}: {emo} ({conf}%)")
                             show_detection_guide()
+                            location, method = detect_location(image)
+                            st.write(f"📍 Estimated Location: **{location}** ({method})")
                             save_history(username, emotions[0], confidences[0], "Unknown")
                         else:
                             st.warning("No faces were detected in the uploaded image.")
