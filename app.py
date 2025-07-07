@@ -107,9 +107,9 @@ def main():
                             else:
                                 location = f"{landmark} (coordinates not found)"
                                 method = "Landmark detected"
-                    else:
-                        location = "Location not found"
-                        method = "None"
+                        else:
+                            location = "Location not found"
+                            method = "None"
 
                     col1, col2 = st.columns([1, 2])
                     with col1:
