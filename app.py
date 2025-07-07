@@ -49,13 +49,22 @@ def show_detection_guide():
         - Ensure the face is not obstructed
         """)
 
+def sidebar_design():
+    st.sidebar.markdown("## Quick Navigation")
+    st.sidebar.markdown("- Upload and detect emotions")
+    st.sidebar.markdown("- View and filter upload history")
+    st.sidebar.markdown("- Visualize your emotion distribution")
+    st.sidebar.divider()
+    st.sidebar.info("Enhance your experience by ensuring clear, well-lit facial images.")
+
 def main():
     st.title("👁‍🗨 AI Emotion & Location Detector")
     st.caption("Upload a photo to detect facial emotions and estimate location.")
+    sidebar_design()
     tabs = st.tabs(["🏠 Home", "🗺️ Location Map", "📜 Upload History", "📊 Emotion Analysis Chart"])
 
     with tabs[0]:
-        username = st.text_input("👤 Please enter your username")
+        username = st.text_input("👤 Enter your username")
         if username:
             st.sidebar.success(f"👤 Logged in as: {username}")
             uploaded_file = st.file_uploader("Upload an image (JPG/PNG)", type=["jpg", "png"])
@@ -115,7 +124,7 @@ def main():
             except:
                 st.warning("Error loading history records.")
         else:
-            st.warning("Please enter your username to display upload history.")
+            st.warning("Please enter your username to view your upload history.")
 
     with tabs[3]:
         st.subheader("📊 Emotion Analysis Chart")
