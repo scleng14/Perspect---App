@@ -38,41 +38,32 @@ def save_history(username, emotion, confidence, location="Unknown"):
 def show_detection_guide():
     with st.expander("ℹ️ How Emotion Detection Works", expanded=False):
         st.markdown("""
-        **Detection Model Details:**
-        - Uses DeepFace with a hybrid CNN architecture
-        - Detects 7 primary emotions: Happy, Sad, Angry, Neutral, Surprise, Fear, Disgust
-        - Displays confidence scores for each detected face
+        *Detection Logic Explained:*
+        - 😊 Happy: Smile present, cheeks raised
+        - 😠 Angry: Eyebrows lowered, eyes wide open
+        - 😐 Neutral: No strong facial movements
+        - 😢 Sad: Eyebrows raised, lip corners down
+        - 😲 Surprise: Eyebrows raised, mouth open
+        - 😨 Fear: Eyes tense, lips stretched
+        - 🤢 Disgust: Nose wrinkled, upper lip raised
 
-        **Tips for Best Accuracy:**
-        - Upload clear, front-facing images
-        - Use well-lit environments
-        - Ensure the face is not obstructed
+        *Tips for Better Results:*
+        - Use clear, front-facing images
+        - Ensure good lighting
+        - Avoid obstructed faces
         """)
 
 def sidebar_design(username):
     if username:
         st.sidebar.success(f"👤 Logged in as: {username}")
-
-    st.sidebar.markdown("### ")
     st.sidebar.markdown("---")
-    st.sidebar.markdown("> Welcome! Ready to explore your emotions today?")
-
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
-    st.sidebar.markdown(f"🕒 **Current Time:** {now}")
-
-    st.sidebar.markdown("---")
-    with st.sidebar.container():
-        st.markdown("## 🔎 Quick Navigation")
-        st.markdown("- Home: Upload and analyze images")
-        st.markdown("- Location Map: View demo location")
-        st.markdown("- Upload History: Track your records")
-        st.markdown("- Emotion Chart: Visualize trends")
-
-        st.divider()
-        st.info("💡 For best results, use front-facing, well-lit facial images.")
-        st.caption("Need help? See info sections in each tab.")
-        st.caption("Questions? Contact our support team.")
-
+    st.sidebar.markdown("## Quick Navigation")
+    st.sidebar.markdown("- Upload and detect emotions")
+    st.sidebar.markdown("- View and filter upload history")
+    st.sidebar.markdown("- Visualize your emotion distribution")
+    st.sidebar.divider()
+    st.sidebar.info("Enhance your experience by ensuring clear, well-lit facial images.")
+  
 def main():
     st.title("👁‍🗨 AI Emotion & Location Detector")
     st.caption("Upload a photo to detect facial emotions and estimate location.")
