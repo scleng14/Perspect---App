@@ -103,20 +103,25 @@ def main():
                         if gps_info:
                             coords = convert_gps(gps_info)
                             if coords:
-                                location = get_address_from_coords(coords)
-                                method = "GPS Metadata"
-                        if location == "Unknown":
+                                loc = get_address_from_coords(coords)
+                                if loc and loc != "Unknown location":
+                                    location = loc
+                                    method = "GPS Metadata"
+                        if location == "Unknown" or location == "Unknown location":
                             landmark = detect_landmark(temp_path)
                             if landmark:
                                 coords, source = query_landmark_coords(landmark)
                                 if coords:
-                                    location = get_address_from_coords(coords)
-                                    method = f"Landmark: {landmark} ({source})"
-                                else:
-                                    location = f"Recognized landmark (no coordinates): {landmark}"
-                                    method = "CLIP Model"
+                                    loc = get_address_from_coords(coords)
+                                    if loc and loc != "Unknown location":
+                                        location = loc
+                                        method = f"Landmark: {landmark} ({source})"
+                                    else:
+                                        location = f"Recognized landmark: {landmark} (No address)"
+                                        method = "CLIP Model"
                     except Exception as e:
                         st.error(f"Location detection error: {str(e)}")
+
 
                    
                     col1, col2 = st.columns([1, 2])
