@@ -91,26 +91,28 @@ def main():
                     detected_img = detector.draw_detections(img, detections)
 
                     location = "Unknown"
-                    method = ""
-                    gps = extract_gps(temp_path)
-                    if gps:
-                        lat, lon = convert_gps(gps)
-                        location = get_address_from_coords(lat, lon)
-                        method = "GPS Metadata"
-                    else:
-                        landmark = detect_landmark(temp_path)
-                        if landmark:
-                            result = query_landmark_coords(landmark)
-                            if result is not None:
-                                (lat, lon), method = result
-                                location = f"{landmark} ({lat:.4f}, {lon:.4f})"
-                            else:
-                                location = f"{landmark} (coordinates not found)"
-                                method = "Landmark detected"
-                        else:
-                            location = "Location not found"
-                            method = "None"
+                    method = "No detection method"
+                    try:
+                        gps_info = extract_gps(temp_path)
+                        if gps_info:
+                            coords = convert_gps(gps_info)
+                            if coords:
+                                location = get_address_from_coords(coords)
+                                method = "GPS Metadata"
+                        if location == "Unknown":
+                            landmark = detect_landmark(temp_path)
+                            if landmark:
+                                coords, source = query_landmark_coords(landmark)
+                                if coords:
+                                    location = get_address_from_coords(coords)
+                                    method = f"Landmark: {landmark} ({source})"
+                                else:
+                                    location = f"Recognized landmark (no coordinates): {landmark}"
+                                    method = "CLIP Model"
+                    except Exception as e:
+                        st.error(f"Location detection error: {str(e)}")
 
+                   
                     col1, col2 = st.columns([1, 2])
                     with col1:
                         st.subheader("🔍 Detection Results")
