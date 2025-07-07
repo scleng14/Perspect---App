@@ -24,15 +24,30 @@ def extract_gps(image_path):
 
 def convert_gps(gps_info):
     try:
-        def _convert(coord, ref):
-            deg, minute, sec = coord
-            result = deg[0] / deg[1] + minute[0] / minute[1] / 60 + sec[0] / sec[1] / 3600
-            return result if ref in ['N', 'E'] else -result
+        def _safe_convert(coord, ref):
+            # 处理不同相机格式
+            if isinstance(coord, (int, float)):
+                return coord if ref in ['N','E'] else -coord
+            
+            if len(coord) == 3:  # 标准度分秒格式
+                deg, minute, sec = coord
+                result = deg[0]/deg[1] + minute[0]/minute[1]/60 + sec[0]/sec[1]/3600
+            elif len(coord) == 2:  # 只有度和分
+                deg, minute = coord
+                result = deg[0]/deg[1] + minute[0]/minute[1]/60
+            else:  # 十进制度
+                result = coord[0]/coord[1]
+                
+            return result if ref in ['N','E'] else -result
 
-        lat = _convert(gps_info["GPSLatitude"], gps_info["GPSLatitudeRef"])
-        lon = _convert(gps_info["GPSLongitude"], gps_info["GPSLongitudeRef"])
-        return (lat, lon)
+        required = ["GPSLatitude", "GPSLatitudeRef", "GPSLongitude", "GPSLongitudeRef"]
+        if not all(k in gps_info for k in required):
+            return None
+            
+        return (
+            _safe_convert(gps_info["GPSLatitude"], gps_info["GPSLatitudeRef"]),
+            _safe_convert(gps_info["GPSLongitude"], gps_info["GPSLongitudeRef"])
+        )
     except Exception as e:
         print(f"[CONVERT ERROR] {e}")
         return None
-
