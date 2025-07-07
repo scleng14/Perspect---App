@@ -26,7 +26,18 @@ def extract_gps(image_path):
                 return None
         
         gps_info = {}
-        # Rest of your existing code...
+        for tag_id,value in exif_data.items():
+            tag=TAGS.get(tag_id)
+            if tag=="GPSInfo":
+                for key in value:
+                    decoded=GPSTAGS.get(key,key)
+                    gps_info[decoded]=value[key]
+        return gps_info if gps_info
+    except Exception as e:
+        print(f"[EXIF ERROR] {str(e)}")
+        return none
+        
+       
 def convert_gps(gps_info):
     try:
         def _safe_convert(coord, ref):
@@ -49,10 +60,11 @@ def convert_gps(gps_info):
         if not all(k in gps_info for k in required):
             return None
             
-        return (
-            _safe_convert(gps_info["GPSLatitude"], gps_info["GPSLatitudeRef"]),
-            _safe_convert(gps_info["GPSLongitude"], gps_info["GPSLongitudeRef"])
-        )
+        lat=_safe_convert(gps_info["GPSLatitude"], gps_info["GPSLatitudeRef"]),
+        lon=_safe_convert(gps_info["GPSLongitude"], gps_info["GPSLongitudeRef"])
+        
+        return rounf(lat,6),round(lon ,6)
+        
     except Exception as e:
         print(f"[CONVERT ERROR] {e}")
         return None
