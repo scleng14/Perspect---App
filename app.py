@@ -46,6 +46,7 @@ def show_detection_guide():
         - 😲 Surprise: Eyebrows raised, mouth open
         - 😨 Fear: Eyes tense, lips stretched
         - 🤢 Disgust: Nose wrinkled, upper lip raised
+        
         *Detection Model:*
         - Using DeepFace with hybrid CNN architecture
         - 7 basic emotions: happy, sad, angry, neutral, surprise, fear, disgust
