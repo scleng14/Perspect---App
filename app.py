@@ -52,12 +52,15 @@ def show_detection_guide():
 def sidebar_design(username):
     if username:
         st.sidebar.success(f"👤 Logged in as: {username}")
+    st.sidebar.markdown("---")
     st.sidebar.markdown("## Quick Navigation")
     st.sidebar.markdown("- Upload and detect emotions")
     st.sidebar.markdown("- View and filter upload history")
     st.sidebar.markdown("- Visualize your emotion distribution")
     st.sidebar.divider()
     st.sidebar.info("Enhance your experience by ensuring clear, well-lit facial images.")
+    st.sidebar.caption("Need help? Refer to the info sections inside each tab for guidance.")
+    st.sidebar.caption("Feedback? Reach out to our support team.")
 
 def main():
     st.title("👁‍🗨 AI Emotion & Location Detector")
@@ -118,7 +121,7 @@ def main():
                     else:
                         df_filtered = df[df["Username"].str.contains(username, case=False)]
                         df_filtered = df_filtered.sort_values("timestamp", ascending=False).reset_index(drop=True)
-                        df_filtered.index = df_filtered.index + 1
+                        df_filtered.index = range(1, len(df_filtered)+1)
                         st.dataframe(df_filtered)
                         st.caption(f"Total records found for {username}: {len(df_filtered)}")
                 else:
