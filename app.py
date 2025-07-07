@@ -9,7 +9,8 @@ import os
 import plotly.express as px
 from emotion_utils.detector import EmotionDetector
 import tempfile
-from location_utils.extract_gps import extract_gps, convert_gps, get_address_from_coords
+from location_utils.extract_gps import extract_gps, convert_gps
+from locatin_utils.geocoder import get_address_from_coords
 from location_utils.landmark import detect_landmark, query_landmark_coords
 
 
