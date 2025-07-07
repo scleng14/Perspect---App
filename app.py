@@ -62,7 +62,7 @@ def sidebar_design(username):
     st.sidebar.markdown("- View and filter upload history")
     st.sidebar.markdown("- Visualize your emotion distribution")
     st.sidebar.divider()
-    st.sidebar.info("Enhance your experience by ensuring clear, well-lit facial images.")
+    st.sidebar.info("💡 Enhance your experience by ensuring clear, well-lit facial images.")
   
 def main():
     st.title("👁‍🗨 AI Emotion & Location Detector")
