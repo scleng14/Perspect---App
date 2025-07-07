@@ -5,9 +5,15 @@ from transformers import CLIPProcessor, CLIPModel
 from PIL import Image
 import torch
 
-# Load CLIP model and processor
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+@st.cache_resource  # Streamlit专用缓存装饰器
+def load_models():
+    print("Loading CLIP model...")  # 调试用
+    return (
+        CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32"),
+        CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    )
+
+processor, model = load_models()  
 
 # Predefined landmarks with name, city, latitude, longitude
 LANDMARK_KEYWORDS = {
@@ -69,22 +75,49 @@ LANDMARK_KEYWORDS = {
 OVERPASS_URL = "http://overpass-api.de/api/interpreter"
 
 def detect_landmark(image_path):
-    image = Image.open(image_path).convert("RGB")
-    candidates = list(LANDMARK_KEYWORDS.keys())
+    try:
+        image = Image.open(image_path).convert("RGB")
+    
+        malaysia_landmarks = [k for k in LANDMARK_KEYWORDS 
+                            if isinstance(LANDMARK_KEYWORDS[k][1], str) 
+                            and "malaysia" in LANDMARK_KEYWORDS[k][1].lower()]
+        
+        if malaysia_landmarks:
+            inputs = processor(
+                text=malaysia_landmarks,
+                images=image,
+                return_tensors="pt",
+                padding=True
+            )
+        
+        with torch.no_grad():
+            outputs = model(**inputs)
+            probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
+        
+        best_idx = probs.argmax()
+        if probs[best_idx] > 0.3: 
+            return malaysia_landmarks[best_idx]
+        
+        all_landmarks = list(LANDMARK_KEYWORDS.keys())
+        inputs = processor(
+            text=all_landmarks,
+            images=image,
+            return_tensors="pt",
+            padding=True
+        )
 
-    inputs = clip_processor(text=candidates, images=image, return_tensors="pt", padding=True)
-    with torch.no_grad():
-        outputs = clip_model(**inputs)
-        logits_per_image = outputs.logits_per_image
-        probs = logits_per_image.softmax(dim=1).cpu().numpy().flatten()
-
-    best_idx = probs.argmax()
-    best_prob = probs[best_idx]
-
-    print(f"[CLIP] Top match: {candidates[best_idx]} ({best_prob:.2f})")
-    if best_prob > 0.3:  # Confidence threshold
-        return candidates[best_idx]
-    return None
+         with torch.no_grad():
+            outputs = model(**inputs)
+            probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
+        
+        best_idx = probs.argmax()
+        if probs[best_idx] > 0.3:
+            return all_landmarks[best_id
+        return None
+    
+    except Exception as e:
+        print(f"[LANDMARK ERROR] {str(e)}")
+        return None
 
 def query_landmark_coords(landmark_name):
     if landmark_name in LANDMARK_KEYWORDS:
