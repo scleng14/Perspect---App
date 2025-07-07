@@ -52,14 +52,18 @@ def show_detection_guide():
 def sidebar_design():
     st.sidebar.markdown("## Quick Navigation")
     st.sidebar.markdown("- Upload and detect emotions")
-    st.sidebar.markdown("- View and filter upload history")
+    st.sidebar.markdown("- View and filter your history")
     st.sidebar.markdown("- Visualize your emotion distribution")
     st.sidebar.divider()
-    st.sidebar.info("Enhance your experience by ensuring clear, well-lit facial images.")
+    st.sidebar.info("Tip: Upload clear, front-facing, well-lit images for best results.")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**App Version:** 1.0.0")
+    st.sidebar.markdown("**Developer:** AI Labs Team")
+    st.sidebar.markdown("[GitHub Repository](https://github.com/example/emotion-location-app)")
 
 def main():
     st.title("👁‍🗨 AI Emotion & Location Detector")
-    st.caption("Upload a photo to detect facial emotions and estimate location.")
+    st.caption("Try face detection by uploading a photo. The system will identify facial emotions and log a sample location.")
     sidebar_design()
     tabs = st.tabs(["🏠 Home", "🗺️ Location Map", "📜 Upload History", "📊 Emotion Analysis Chart"])
 
@@ -67,7 +71,7 @@ def main():
         username = st.text_input("👤 Enter your username")
         if username:
             st.sidebar.success(f"👤 Logged in as: {username}")
-            uploaded_file = st.file_uploader("Upload an image (JPG/PNG)", type=["jpg", "png"])
+            uploaded_file = st.file_uploader("Upload an image (JPG or PNG)", type=["jpg", "png"])
             if uploaded_file:
                 try:
                     image = Image.open(uploaded_file)
@@ -99,14 +103,15 @@ def main():
                     st.error(f"Error while processing the image: {e}")
 
     with tabs[1]:
-        st.subheader("🗺️ Random Location Sample (Demo)")
+        st.subheader("🗺️ Random Location Sample (Demo Only)")
         st.map(pd.DataFrame({
             'lat': [3.139 + random.uniform(-0.01, 0.01)],
             'lon': [101.6869 + random.uniform(-0.01, 0.01)]
         }))
+        st.caption("Note: Real location detection will be available in future updates.")
 
     with tabs[2]:
-        st.subheader("📜 Upload History")
+        st.subheader("📜 Upload History Viewer")
         if username:
             try:
                 if os.path.exists("history.csv"):
@@ -118,16 +123,16 @@ def main():
                         df_filtered = df_filtered.sort_values("timestamp", ascending=False).reset_index(drop=True)
                         df_filtered.index = df_filtered.index + 1
                         st.dataframe(df_filtered)
-                        st.caption(f"Total records found: {len(df_filtered)}")
+                        st.caption(f"Total records for {username}: {len(df_filtered)}")
                 else:
                     st.info("No history file found.")
             except:
                 st.warning("Error loading history records.")
         else:
-            st.warning("Please enter your username to view your upload history.")
+            st.warning("Please enter your username above to view your history.")
 
     with tabs[3]:
-        st.subheader("📊 Emotion Analysis Chart")
+        st.subheader("📊 Emotion Distribution Chart")
         if username:
             try:
                 if os.path.exists("history.csv"):
@@ -137,13 +142,13 @@ def main():
                         fig = px.pie(df_filtered, names="Emotion", title=f"Emotion Distribution for {username}")
                         st.plotly_chart(fig)
                     else:
-                        st.info("No emotion records found for this username.")
+                        st.info("No emotion records found for this user.")
                 else:
                     st.info("History file not found.")
             except Exception as e:
                 st.error(f"Error generating chart: {e}")
         else:
-            st.warning("Please enter your username to generate your emotion chart.")
+            st.warning("Please enter your username to generate your personal emotion chart.")
 
 if __name__ == "__main__":
     main()
