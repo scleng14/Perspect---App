@@ -8,7 +8,8 @@ import random
 import os
 import plotly.express as px
 from emotion_utils.detector import EmotionDetector
-from location_utils.extract_gps import extract_gps, convert_gps, get_address_from_coords
+from location_utils.extract_gps import extract_gps, convert_gps
+from location_utils.geocoder import get_address_from_coords  
 from location_utils.landmark import detect_landmark, query_landmark_coords
 
 # ----------------- App Configuration -----------------
