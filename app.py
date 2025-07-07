@@ -100,15 +100,20 @@ def main():
                     method = "No detection method"
                     try:
                         gps_info = extract_gps(temp_path)
+                        st.write("📦 GPS Raw Info:", gps_info)
                         if gps_info:
                             coords = convert_gps(gps_info)
+                            st.write("🧭 Converted Coords:", coords)
                             if coords:
                                 loc = get_address_from_coords(coords)
+                                st.write("🏷️ Final Address:", location)
+                                
                                 if loc and loc != "Unknown location":
                                     location = loc
                                     method = "GPS Metadata"
                         if location == "Unknown" or location == "Unknown location":
                             landmark = detect_landmark(temp_path)
+                            st.write("🔁 Landmark fallback activated:", landmark)
                             if landmark:
                                 coords, source = query_landmark_coords(landmark)
                                 if coords:
