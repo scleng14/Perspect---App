@@ -117,12 +117,15 @@ def query_landmark_coords(landmark_name: str) -> tuple | None:
 
     try:
         response = requests.post(OVERPASS_URL, data=query, timeout=15)
+        response.raise_for_status() 
         data = response.json()
         if data["elements"]:
             element = data["elements"][0]
-            center = element.get("center", {})
-            return (center.get("lat"), center.get("lon")), "Overpass"
+            if "center" in element:
+                return (element["center"]["lat"], element["center"]["lon"]), "Overpass"
+            elif "lat" in element:
+                return (element["lat"], element["lon"]), "Overpass"
     except Exception as e:
         print(f"[OVERPASS ERROR] {e}")
 
-    return None, "Not Found"
+    return None, "Not coordinates available"
