@@ -77,7 +77,7 @@ OVERPASS_URL = "http://overpass-api.de/api/interpreter"
 def detect_landmark(image_path: str) -> str | None:
     """
     Use CLIP model to match the image with a predefined list of landmarks.
-    Returns the best matched keyword if confidence > 0.3, else None.
+    Returns the best matched keyword if confidence > 0.2, else None.
     """
     try:
         image = Image.open(image_path).convert("RGB")
