@@ -103,6 +103,8 @@ def main():
                                 
                     if location in ("Unknown","Unknown location"):
                         landmark = detect_landmark(temp_path)
+                        st.write("🔁 CLIP predicted landmark:", landmark)
+
                         if landmark:
                             (lat, lon), src = query_landmark_coords(landmark)
                             addr=get_address_from_coords((lat,lon))
