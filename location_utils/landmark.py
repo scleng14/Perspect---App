@@ -64,7 +64,7 @@ LANDMARK_KEYWORDS = {
 
     # Others
     "machu picchu": ["Machu Picchu", "Peru", -13.1631, -72.5450],
-    "christ the redeemer": ("Christ the Redeemer", "Rio de Janeiro", -22.9519, -43.2105],
+    "christ the redeemer": ["Christ the Redeemer", "Rio de Janeiro", -22.9519, -43.2105],
     "opera house": ["Sydney Opera House", "Sydney", -33.8568, 151.2153],
     "sydney opera house": ["Sydney Opera House", "Sydney", -33.8568, 151.2153],
     "Eiffel Tower": ["Eiffel Tower", "Paris", 48.8584, 2.2945],
