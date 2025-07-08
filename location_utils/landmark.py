@@ -92,7 +92,9 @@ def detect_landmark(image_path: str) -> Optional[str]:
         best_idx = probs.argmax()
         best_score=probs[best_idx]
         best_name=keywords[best_idx]
-        if best_score > 0.1:
+        for idx in topk:
+            print(f"  {keywords[idx]} ({probs[idx]:.2f})")
+        if best_score > 0.05:
             print(f"[CLIP MATCH] {best_name} ({best_score:.2f})")
             return best_name.lower()
         else:
