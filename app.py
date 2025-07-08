@@ -152,8 +152,7 @@ def main():
                         with t2:
                             st.image(detected_img, channels="BGR", use_container_width=True,
                                      caption=f"Detected {len(detections)} face(s)")
-                except Exception as e:
-                    st.error(f"Error while processing the image: {e}")
+               
 
     with tabs[1]:
         st.subheader("🗺️ Random Location Sample (Demo)")
