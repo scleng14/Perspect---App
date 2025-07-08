@@ -86,51 +86,33 @@ def main():
                         temp_path = tmp_file.name
                     try:
                         image = Image.open(temp_path).convert("RGB")
-                    finally:
-                        try:
-                            os.unlink(temp_path)  # 确保临时文件最终被删除
-                        except:
-                            pass  # 如果删除失败也继续执
-                except Exception as e:
-                    st.error(f"Error while processing the image: {e}")
-                else:
-                    img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-                    detections = detector.detect_emotions(img)
-                    detected_img = detector.draw_detections(img, detections)
-
-                    location = "Unknown"
-                    method = "No detection method"
-                    try:
+                        img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+                        detections = detector.detect_emotions(img)
+                        detected_img = detector.draw_detections(img, detections)
+                        
+                        location = "Unknown"
+                        method = ""
                         gps_info = extract_gps(temp_path)
-                        st.write("📦 GPS Raw Info:", gps_info)
+                
                         if gps_info:
                             coords = convert_gps(gps_info)
-                            st.write("🧭 Converted Coords:", coords)
+                          
                             if coords:
-                                loc = get_address_from_coords(coords)
-                                st.write("🏷️ Final Address:", location)
+                                location = get_address_from_coords(coords)
+                                method="GPS Metadata"
                                 
-                                if loc and loc != "Unknown location":
-                                    location = loc
-                                    method = "GPS Metadata"
                         if location == "Unknown" or location == "Unknown location":
                             landmark = detect_landmark(temp_path)
-                            st.write("🔁 Landmark fallback activated:", landmark)
                             if landmark:
-                                coords, source = query_landmark_coords(landmark)
-                                if coords:
-                                    loc = get_address_from_coords(coords)
-                                    if loc and loc != "Unknown location":
-                                        location = loc
-                                        method = f"Landmark: {landmark} ({source})"
-                                    else:
-                                        location = f"Recognized landmark: {landmark} (No address)"
-                                        method = "CLIP Model"
-                    except Exception as e:
-                        st.error(f"Location detection error: {str(e)}")
-
-
-                   
+                                (lat, lon), src = query_landmark_coords(landmark)
+                                location = get_address_from_coords((lat,lon)) or f"{landmark} ({lat:.4f},{lon:.4f})"
+                                method = f"Landmark ({src})"
+                    finally:
+                        try:
+                            os.unlink(temp_path)
+                        except:
+                            pass
+                                              
                     col1, col2 = st.columns([1, 2])
                     with col1:
                         st.subheader("🔍 Detection Results")
