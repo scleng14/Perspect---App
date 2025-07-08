@@ -99,7 +99,7 @@ def main():
                           
                         if coords:
                             location = get_address_from_coords(coords)
-                             method="GPS Metadata"
+                            method="GPS Metadata"
                                 
                     if location in ("Unknown","Unknown location"):
                         landmark = detect_landmark(temp_path)
