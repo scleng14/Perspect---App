@@ -1,4 +1,5 @@
 # location_utils/landmark.py
+from typing import Optional  
 import streamlit as st
 import requests
 from transformers import CLIPProcessor, CLIPModel
