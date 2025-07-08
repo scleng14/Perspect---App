@@ -80,60 +80,67 @@ def main():
         if username:
             uploaded_file = st.file_uploader("Upload an image (JPG/PNG)", type=["jpg", "png"])
             if uploaded_file:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+                    tmp_file.write(uploaded_file.read())
+                    temp_path = tmp_file.name
+               
                 try:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-                        tmp_file.write(uploaded_file.read())
-                        temp_path = tmp_file.name
-                    try:
-                        image = Image.open(temp_path).convert("RGB")
-                        img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-                        detections = detector.detect_emotions(img)
-                        detected_img = detector.draw_detections(img, detections)
+                    image = Image.open(temp_path).convert("RGB")
+                    img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+                    detections = detector.detect_emotions(img)
+                    detected_img = detector.draw_detections(img, detections)
                         
-                        location = "Unknown"
-                        method = ""
-                        gps_info = extract_gps(temp_path)
+                    location = "Unknown"
+                    method = ""
+                    gps_info = extract_gps(temp_path)
                 
-                        if gps_info:
-                            coords = convert_gps(gps_info)
+                    if gps_info:
+                        coords = convert_gps(gps_info)
                           
-                            if coords:
-                                location = get_address_from_coords(coords)
-                                method="GPS Metadata"
+                        if coords:
+                            location = get_address_from_coords(coords)
+                             method="GPS Metadata"
                                 
-                        if location == "Unknown" or location == "Unknown location":
-                            landmark = detect_landmark(temp_path)
-                            if landmark:
-                                (lat, lon), src = query_landmark_coords(landmark)
-                                location = get_address_from_coords((lat,lon)) or f"{landmark} ({lat:.4f},{lon:.4f})"
-                                method = f"Landmark ({src})"
-                    finally:
-                        try:
-                            os.unlink(temp_path)
-                        except:
-                            pass
+                    if location in ("Unknown","Unknown location"):
+                        landmark = detect_landmark(temp_path)
+                        if landmark:
+                            (lat, lon), src = query_landmark_coords(landmark)
+                            addr=get_address_from_coords((lat,lon))
+                            if addr and addr !="Unknown location":
+                                location=addr
+                            else:
+                                location = f"{landmark} ({lat:.4f},{lon:.4f})"
+                            method = f"Landmark ({src})"
+                except Exception as e:
+                    st.error(f"❌ Processing error: {e}")
+                    return
+                finally:
+                    try:
+                        os.unlink(temp_path)
+                    except:
+                        pass
                                               
-                    col1, col2 = st.columns([1, 2])
-                    with col1:
-                        st.subheader("🔍 Detection Results")
-                        if detections:
-                            emotions = [d["emotion"] for d in detections]
-                            confidences = [d["confidence"] for d in detections]
-                            st.success(f"🎭 {len(detections)} face(s) detected")
-                            for i, (emo, conf) in enumerate(zip(emotions, confidences)):
-                                st.write(f"- Face {i + 1}: {emo} ({conf}%)")
-                            show_detection_guide()
-                            st.write(f"📍 Estimated Location: **{location}** ({method})")
-                            save_history(username, emotions[0], confidences[0], "Unknown")
-                        else:
-                            st.warning("No faces were detected in the uploaded image.")
-                    with col2:
-                        t1, t2 = st.tabs(["Original Image", "Processed Image"])
-                        with t1:
-                            st.image(image, use_container_width=True)
-                        with t2:
-                            st.image(detected_img, channels="BGR", use_container_width=True,
-                                     caption=f"Detected {len(detections)} face(s)")
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    st.subheader("🔍 Detection Results")
+                    if detections:
+                        emotions = [d["emotion"] for d in detections]
+                        confidences = [d["confidence"] for d in detections]
+                        st.success(f"🎭 {len(detections)} face(s) detected")
+                        for i, (emo, conf) in enumerate(zip(emotions, confidences)):
+                            st.write(f"- Face {i + 1}: {emo} ({conf}%)")
+                        show_detection_guide()
+                        st.write(f"📍 Estimated Location: **{location}** ({method})")
+                        save_history(username, emotions[0], confidences[0], location)
+                    else:
+                        st.warning("No faces were detected in the uploaded image.")
+                with col2:
+                    t1, t2 = st.tabs(["Original Image", "Processed Image"])
+                    with t1:
+                         st.image(image, use_container_width=True)
+                    with t2:
+                        st.image(detected_img, channels="BGR", use_container_width=True,
+                                    caption=f"Detected {len(detections)} face(s)")
                
 
     with tabs[1]:
