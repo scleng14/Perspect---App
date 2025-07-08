@@ -92,9 +92,9 @@ def detect_landmark(image_path: str) -> Optional[str]:
         best_idx = probs.argmax()
         best_score=probs[best_idx]
         best_name=keywords[best_idx]
-        if best_score > 0.15:
+        if best_score > 0.1:
             print(f"[CLIP MATCH] {best_name} ({best_score:.2f})")
-            return best_name
+            return best_name.lower()
         else:
             print(f"[CLIP LOW CONFIDENCE] Best={best_name} ({best_score:.2f})")
     except Exception as e:
@@ -105,7 +105,7 @@ def query_landmark_coords(landmark_name: str) -> tuple | None:
     """
     Return (lat, lon), source if landmark name is found in predefined list or Overpass API.
     """
-    if landmark_name in LANDMARK_KEYWORDS:
+    if landmark_name.lower() in LANDMARK_KEYWORDS:
         _, _, lat, lon = LANDMARK_KEYWORDS[landmark_name]
         return (lat, lon), "Predefined"
 
