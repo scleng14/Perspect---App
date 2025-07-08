@@ -61,7 +61,7 @@ def convert_gps(gps_info):
         if not all(k in gps_info for k in required):
             return None
             
-        lat=_safe_convert(gps_info["GPSLatitude"], gps_info["GPSLatitudeRef"]),
+        lat=_safe_convert(gps_info["GPSLatitude"], gps_info["GPSLatitudeRef"])
         lon=_safe_convert(gps_info["GPSLongitude"], gps_info["GPSLongitudeRef"])
         
         return round(lat,6),round(lon ,6)
