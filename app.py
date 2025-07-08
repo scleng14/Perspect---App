@@ -81,16 +81,19 @@ def main():
             uploaded_file = st.file_uploader("Upload an image (JPG/PNG)", type=["jpg", "png"])
             if uploaded_file:
                 try:
-                   with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
-                       tmp_file.write(uploaded_file.read())
-                       temp_path = tmp_file.name
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+                        tmp_file.write(uploaded_file.read())
+                        temp_path = tmp_file.name
                     try:
+                        image = Image.open(temp_path).convert("RGB")
                     finally:
                         try:
-                            os.unlink(temp_path)
+                            os.unlink(temp_path)  # 确保临时文件最终被删除
                         except:
-                            pass
-                    
+                            pass  # 如果删除失败也继续执
+                except Exception as e:
+                    st.error(f"Error while processing the image: {e}")
+    
                     img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     detections = detector.detect_emotions(img)
                     detected_img = detector.draw_detections(img, detections)
