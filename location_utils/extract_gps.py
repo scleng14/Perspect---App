@@ -32,10 +32,11 @@ def extract_gps(image_path):
                 for key in value:
                     decoded=GPSTAGS.get(key,key)
                     gps_info[decoded]=value[key]
-        return gps_info if gps_info
+        return gps_info if gps_info else None
     except Exception as e:
         print(f"[EXIF ERROR] {str(e)}")
-        return none
+        return None 
+   
         
        
 def convert_gps(gps_info):
