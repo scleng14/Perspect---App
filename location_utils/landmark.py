@@ -89,20 +89,25 @@ def detect_landmark(image_path: str) -> Optional[str]:
             outputs = clip_model(**inputs)
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
 
-        best_idx = probs.argmax()
-        best_score=probs[best_idx]
+        best_idx = int(probs.argmax())
+        best_score=float(probs[best_idx])
         best_name=keywords[best_idx]
-        for idx in topk:
-            print(f"  {keywords[idx]} ({probs[idx]:.2f})")
-        if best_score > 0.05:
-            print(f"[CLIP MATCH] {best_name} ({best_score:.2f})")
+        # 打印 top_k 调试信息
+        topk_idxs = probs.argsort()[-top_k:][::-1]
+        print(f"\n[CLIP DEBUG] Best match: {best_name} (score={best_score:.3f})")
+        for idx in topk_idxs:
+            print(f"    {keywords[idx]:<20} → {probs[idx]:.3f}")
+
+        # 根据阈值决定是否返回
+        if best_score >= threshold:
+            print(f"[CLIP MATCH] {best_name} ({best_score:.3f})\n")
             return best_name.lower()
-        else:
-            print(f"[CLIP LOW CONFIDENCE] Best={best_name} ({best_score:.2f})")
+
+        print(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f})\n")
     except Exception as e:
         print(f"[CLIP ERROR] {e}")
     return None
-
+        
 def query_landmark_coords(landmark_name: str) -> tuple | None:
     """
     Return (lat, lon), source if landmark name is found in predefined list or Overpass API.
