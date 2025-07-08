@@ -93,7 +93,7 @@ def main():
                             pass  # 如果删除失败也继续执
                 except Exception as e:
                     st.error(f"Error while processing the image: {e}")
-    
+                else:
                     img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     detections = detector.detect_emotions(img)
                     detected_img = detector.draw_detections(img, detections)
