@@ -63,7 +63,7 @@ def convert_gps(gps_info):
         lat=_safe_convert(gps_info["GPSLatitude"], gps_info["GPSLatitudeRef"]),
         lon=_safe_convert(gps_info["GPSLongitude"], gps_info["GPSLongitudeRef"])
         
-        return rounf(lat,6),round(lon ,6)
+        return round(lat,6),round(lon ,6)
         
     except Exception as e:
         print(f"[CONVERT ERROR] {e}")
