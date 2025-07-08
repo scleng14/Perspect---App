@@ -88,10 +88,19 @@ def detect_landmark(image_path: str) -> Optional[str]:
         with torch.no_grad():
             outputs = clip_model(**inputs)
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
+        idxs = probs.argsort()[::-1][:top_k]
+        print("----- CLIP Top-K Candidates -----")
+        for rank, idx in enumerate(idxs, start=1):
+            name = keywords[idx]
+            score = probs[idx]
+            print(f"{rank:>2}. {name:30s} → {score:.4f}")
 
-        best_idx = int(probs.argmax())
+        best_idx = int(idxs[0])
         best_score=float(probs[best_idx])
         best_name=keywords[best_idx]
+        print(f"[CLIP SELECT] {best_name} (score={probs[best_idx]:.4f})")
+        return best_name.lower()
+        
         # 打印 top_k 调试信息
         topk_idxs = probs.argsort()[-top_k:][::-1]
         print(f"\n[CLIP DEBUG] Best match: {best_name} (score={best_score:.3f})")
