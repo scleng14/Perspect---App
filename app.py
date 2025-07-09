@@ -11,7 +11,7 @@ from emotion_utils.detector import EmotionDetector
 import tempfile
 from location_utils.extract_gps import extract_gps, convert_gps
 from location_utils.geocoder import get_address_from_coords
-from location_utils.landmark import load_models,detect_landmark, query_landmark_coords
+from location_utils.landmark import load_models,detect_landmark, query_landmark_coords,LANDMARK_KEYWORDS
 
 
 # ----------------- App Configuration -----------------
