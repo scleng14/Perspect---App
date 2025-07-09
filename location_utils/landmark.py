@@ -6,9 +6,9 @@ from transformers import CLIPProcessor, CLIPModel
 from PIL import Image
 import torch
 
-@st.cache_resource  # Streamlit专用缓存装饰器
+@st.cache_resource  
 def load_models():
-    print("Loading CLIP model...")  # 调试用
+    print("Loading CLIP model...")  
     return (
         CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32"),
         CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
