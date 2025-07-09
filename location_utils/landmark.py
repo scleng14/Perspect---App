@@ -72,13 +72,12 @@ LANDMARK_KEYWORDS = {
     "taj mahal": ["Taj Mahal", "Agra", 27.1751, 78.0421]
 }
 
-
 OVERPASS_URL = "http://overpass-api.de/api/interpreter"
 
-def detect_landmark(image_path: str) -> Optional[str]:
+def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) -> Optional[str]:
     """
     Use CLIP model to match the image with a predefined list of landmarks.
-    Returns the best matched keyword if confidence > 0.2, else None.
+    Returns the best matched keyword if confidence > threshold, else None.
     """
     try:
         image = Image.open(image_path).convert("RGB")
@@ -88,6 +87,8 @@ def detect_landmark(image_path: str) -> Optional[str]:
         with torch.no_grad():
             outputs = clip_model(**inputs)
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
+        
+        # Get top-k results for debugging
         idxs = probs.argsort()[::-1][:top_k]
         print("----- CLIP Top-K Candidates -----")
         for rank, idx in enumerate(idxs, start=1):
@@ -96,35 +97,34 @@ def detect_landmark(image_path: str) -> Optional[str]:
             print(f"{rank:>2}. {name:30s} → {score:.4f}")
 
         best_idx = int(idxs[0])
-        best_score=float(probs[best_idx])
-        best_name=keywords[best_idx]
-        print(f"[CLIP SELECT] {best_name} (score={probs[best_idx]:.4f})")
-        return best_name.lower()
+        best_score = float(probs[best_idx])
+        best_name = keywords[best_idx]
         
-        # 打印 top_k 调试信息
-        topk_idxs = probs.argsort()[-top_k:][::-1]
         print(f"\n[CLIP DEBUG] Best match: {best_name} (score={best_score:.3f})")
-        for idx in topk_idxs:
-            print(f"    {keywords[idx]:<20} → {probs[idx]:.3f}")
-
-        # 根据阈值决定是否返回
+        
+        # Check if confidence meets threshold
         if best_score >= threshold:
             print(f"[CLIP MATCH] {best_name} ({best_score:.3f})\n")
             return best_name.lower()
-
-        print(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f})\n")
+        else:
+            print(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f}), threshold={threshold}\n")
+            return None
+            
     except Exception as e:
         print(f"[CLIP ERROR] {e}")
-    return None
+        return None
         
-def query_landmark_coords(landmark_name: str) -> tuple | None:
+def query_landmark_coords(landmark_name: str) -> tuple:
     """
-    Return (lat, lon), source if landmark name is found in predefined list or Overpass API.
+    Return ((lat, lon), source) if landmark name is found in predefined list or Overpass API.
+    Returns (None, error_message) if not found.
     """
+    # Check predefined landmarks first
     if landmark_name.lower() in LANDMARK_KEYWORDS:
-        _, _, lat, lon = LANDMARK_KEYWORDS[landmark_name]
+        _, _, lat, lon = LANDMARK_KEYWORDS[landmark_name.lower()]
         return (lat, lon), "Predefined"
 
+    # Try Overpass API as fallback
     query = f"""
     [out:json][timeout:25];
     (
@@ -147,4 +147,4 @@ def query_landmark_coords(landmark_name: str) -> tuple | None:
     except Exception as e:
         print(f"[OVERPASS ERROR] {e}")
 
-    return None, "Not coordinates available"
+    return None, "No coordinates available"
