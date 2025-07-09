@@ -135,14 +135,12 @@ def main():
                                         location = f"{landmark.title()} ({lat:.4f}, {lon:.4f})"
                                         method = f"Landmark ({source})"
                                         print(f"[MAIN] Using landmark fallback: {location}")
-                          else:
-                              print(f"[MAIN] No coordinates found for landmark: {landmark}")
-                              st.write(f"⚠️ Landmark detected but no coordinates available")
-                    else:
-                        print("[MAIN] No landmark detected with sufficient confidence")
-                        st.write("🔍 No landmark detected with sufficient confidence")
-
-
+                            else:
+                                print(f"[MAIN] No coordinates found for landmark: {landmark}")
+                                st.write(f"⚠️ Landmark detected but no coordinates available")
+                        else:
+                            print("[MAIN] No landmark detected with sufficient confidence")
+                            st.write("🔍 No landmark detected with sufficient confidence")
 
                                               
                 col1, col2 = st.columns([1, 2])
