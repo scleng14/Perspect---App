@@ -85,6 +85,10 @@ def main():
                     temp_path = tmp_file.name
                
                 try:
+                    # 调试信息
+                    print(f"[MAIN] Processing image: {uploaded_file.name}")
+                    print(f"[MAIN] Image size: {uploaded_file.size} bytes")
+                    
                     image = Image.open(temp_path).convert("RGB")
                     img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     detections = detector.detect_emotions(img)
@@ -95,64 +99,51 @@ def main():
                     gps_info = extract_gps(temp_path)
                 
                     if gps_info:
+                        print(f"[MAIN] GPS extraction successful: {list(gps_info.keys())}")
                         coords = convert_gps(gps_info)
-                          
+   
                         if coords:
+                            print(f"[MAIN] GPS coordinates: {coords}")
                             location = get_address_from_coords(coords)
                             method="GPS Metadata"
+                        else:
+                            print("[MAIN] No GPS data found in image")
                                 
                     if location in ("Unknown", "Unknown location"):
-    print("[MAIN] Trying landmark detection...")
-    landmark = detect_landmark(temp_path, threshold=0.15, top_k=5)
-    
-    if landmark:
-        print(f"[MAIN] CLIP predicted landmark: {landmark}")
-        st.write(f"🔍 CLIP predicted landmark: **{landmark}**")
-        
-        coords_result, source = query_landmark_coords(landmark)
-        
-        if coords_result:
-            lat, lon = coords_result
-            print(f"[MAIN] Landmark coordinates: {lat}, {lon} (source: {source})")
-            
-            # Try to get address from coordinates
-            addr = get_address_from_coords((lat, lon))
-            if addr and addr not in ("Unknown location", "Invalid coordinates", "Geocoding service unavailable"):
-                location = addr
-                method = f"Landmark ({source})"
-                print(f"[MAIN] Final location: {location}")
-            else:
-                # Fallback to landmark name with coordinates
-                if landmark in LANDMARK_KEYWORDS:
-                    landmark_info = LANDMARK_KEYWORDS[landmark]
-                    location = f"{landmark_info[0]}, {landmark_info[1]}"
-                else:
-                    location = f"{landmark.title()} ({lat:.4f}, {lon:.4f})"
-                method = f"Landmark ({source})"
-                print(f"[MAIN] Using landmark fallback: {location}")
-        else:
-            print(f"[MAIN] No coordinates found for landmark: {landmark}")
-            st.write(f"⚠️ Landmark detected but no coordinates available")
-    else:
-        print("[MAIN] No landmark detected with sufficient confidence")
-        st.write("🔍 No landmark detected with sufficient confidence")
+                        print("[MAIN] Trying landmark detection...")
+                        landmark = detect_landmark(temp_path, threshold=0.15, top_k=5)
+                        
+                        if landmark:
+                            print(f"[MAIN] CLIP predicted landmark: {landmark}")
+                            st.write(f"🔍 CLIP predicted landmark: **{landmark}**")
+                            
+                            coords_result, source = query_landmark_coords(landmark)
+                            
+                            if coords_result:
+                                lat, lon = coords_result
+                                print(f"[MAIN] Landmark coordinates: {lat}, {lon} (source: {source})")
+                                addr = get_address_from_coords((lat, lon))
+                                if addr and addr not in ("Unknown location", "Invalid coordinates", "Geocoding service unavailable"):
+                                    location = addr
+                                    method = f"Landmark ({source})"
+                                    print(f"[MAIN] Final location: {location}")
+                                else:
+                                    if landmark in LANDMARK_KEYWORDS:
+                                        landmark_info = LANDMARK_KEYWORDS[landmark]
+                                        location = f"{landmark_info[0]}, {landmark_info[1]}"
+                                    else:
+                                        location = f"{landmark.title()} ({lat:.4f}, {lon:.4f})"
+                                        method = f"Landmark ({source})"
+                                        print(f"[MAIN] Using landmark fallback: {location}")
+                          else:
+                              print(f"[MAIN] No coordinates found for landmark: {landmark}")
+                              st.write(f"⚠️ Landmark detected but no coordinates available")
+                    else:
+                        print("[MAIN] No landmark detected with sufficient confidence")
+                        st.write("🔍 No landmark detected with sufficient confidence")
 
-# Additional debugging additions:
-# Add this at the start of your image processing section:
-print(f"[MAIN] Processing image: {uploaded_file.name}")
-print(f"[MAIN] Image size: {uploaded_file.size} bytes")
 
-# Add this after GPS extraction:
-if gps_info:
-    print(f"[MAIN] GPS extraction successful: {list(gps_info.keys())}")
-else:
-    print("[MAIN] No GPS data found in image")
 
-# Add this after coordinate conversion:
-if coords:
-    print(f"[MAIN] GPS coordinates: {coords}")
-else:
-    print("[MAIN] GPS coordinate conversion failed")
                                               
                 col1, col2 = st.columns([1, 2])
                 with col1:
