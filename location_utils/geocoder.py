@@ -11,7 +11,6 @@ geolocator = Nominatim(
 reverse_geocode = RateLimiter(geolocator.reverse, min_delay_seconds=1)
 
 def get_address_from_coords(coords):
-    """Convert coordinates to address with retry logic"""
     if not coords or len(coords) != 2:
         return "Invalid coordinates"
     
