@@ -141,8 +141,10 @@ def main():
                         else:
                             print("[MAIN] No landmark detected with sufficient confidence")
                             st.write("🔍 No landmark detected with sufficient confidence")
-
-                                              
+                except Exception as e:
+                    st.error(f"❌ Something went wrong during processing: {e}")
+                    print(f"[ERROR] {e}")
+                                   
                 col1, col2 = st.columns([1, 2])
                 with col1:
                     st.subheader("🔍 Detection Results")
