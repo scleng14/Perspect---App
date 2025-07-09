@@ -50,7 +50,7 @@ def extract_gps(image_path):
    
         
 def convert_gps(gps_info):
-    """Convert GPS coordinates from EXIF format to decimal degrees"""
+    
     try:
         def _safe_convert(coord, ref):
             """Safely convert coordinates handling different formats"""
