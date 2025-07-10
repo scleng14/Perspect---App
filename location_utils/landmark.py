@@ -134,11 +134,11 @@ def query_landmark_coords(landmark_name: str) -> Tuple[Optional[Tuple[float, flo
     query = f"""
     [out:json][timeout:15];
     (
-      node["name"~"{landmark_key}",i];
-      way["name"~"{landmark_key}",i];
+      node["name"~"{key}",i];
+      way["name"~"{key}",i];
       relation["name"~"{key}",i];
     );
-    out center 1;
+    out center;
     """
     try:
         resp = requests.post(OVERPASS_URL, data=query, timeout=15)
