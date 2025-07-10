@@ -113,24 +113,26 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
         logger.error(f"[CLIP ERROR] {e}")
         return None
         
-def query_landmark_coords(landmark_name: str) -> Tuple[Optional[Tuple[float, float]], str]:
+def query_landmark_coords(landmark_key: str) -> Tuple[Optional[Tuple[float, float]], str]:
     """
-    Return ((lat, lon), source) if landmark name is found in predefined list or Overpass API.
-    Returns (None, error_message) if not found.
+    给定 CLIP 返回的小写 landmark_key，
+    先在预定义字典中查坐标，否则调用 Overpass API。
+    返回 ((lat, lon), "Predefined"/"Overpass")，
+    找不到时返回 (None, "No coordinates available")。
     """
-    # Check predefined landmarks first
     key = landmark_key.lower()
+
+    # 如果是 “a photo of X in Y” 这种提示词，提取出 “X”
     if "photo of " in key and " in " in key:
-        # 提取 "a photo of X in Y" 里的 X
         key = key.split("photo of ", 1)[1].split(" in ", 1)[0].strip()
 
-    # 1) 尝试预定义坐标
+    # 1) 预定义字典优先
     if key in LANDMARK_KEYWORDS:
         name, city, lat, lon = LANDMARK_KEYWORDS[key]
         logger.info(f"[Predefined] {name} @ {city} → ({lat}, {lon})")
         return (lat, lon), "Predefined"
-    # Try Overpass API as fallback
-    # 2) Overpass API 作为兜底
+
+    # 2) Overpass API 兜底
     query = f"""
     [out:json][timeout:15];
     (
@@ -142,7 +144,7 @@ def query_landmark_coords(landmark_name: str) -> Tuple[Optional[Tuple[float, flo
     """
     try:
         resp = requests.post(OVERPASS_URL, data=query, timeout=15)
-        resp.raise_for_status() 
+        resp.raise_for_status()
         data = resp.json()
         elems = data.get("elements", [])
         if elems:
@@ -156,7 +158,7 @@ def query_landmark_coords(landmark_name: str) -> Tuple[Optional[Tuple[float, flo
                 return (lat, lon), "Overpass"
     except Exception as e:
         logger.error(f"[OVERPASS ERROR] 请求失败: {e}")
-        return None, "Overpass API error" 
-        
-    logger.warning(f"[No coordinates] for landmark '{landmark_key}'")
+        return None, "Overpass API error"
+
+    logger.warning(f"[No coordinates] for landmark '{key}'")
     return None, "No coordinates available"
