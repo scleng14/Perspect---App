@@ -34,6 +34,8 @@ def get_detector():
     return EmotionDetector()
 
 detector = get_detector()
+# Load CLIP models once
+device = load_models()
 
 def save_history(username, emotion, confidence, location):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -79,6 +81,9 @@ def sidebar_design(username):
 def main():
     st.title("👁‍🗨 AI Emotion & Location Detector")
     st.caption("Upload a photo to detect facial emotions and estimate location.")
+    # prepare for sharing location across tabs
+    coords_result = None
+    method = ""
     tabs = st.tabs(["🏠 Home", "🗺️ Location Map", "📜 Upload History", "📊 Emotion Analysis Chart"])
 
     with tabs[0]:
@@ -92,10 +97,6 @@ def main():
                     temp_path = tmp_file.name
                
                 try:
-                    # 调试信息
-                    print(f"[MAIN] Processing image: {uploaded_file.name}")
-                    print(f"[MAIN] Image size: {uploaded_file.size} bytes")
-                    
                     image = Image.open(temp_path).convert("RGB")
                     img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     detections = detector.detect_emotions(img)
@@ -111,46 +112,36 @@ def main():
    
                         if coords:
                             print(f"[MAIN] GPS coordinates: {coords}")
+                            coords_result = coords
                             location = get_address_from_coords(coords)
                             method="GPS Metadata"
-                        else:
-                            print("[MAIN] No GPS data found in image")
-                                
-                    if location in ("Unknown", "Unknown location"):
-                        print("[MAIN] Trying landmark detection...")
+                       
+                    # Fallback to CLIP landmark
+                    if coords_result is None:
                         landmark = detect_landmark(temp_path, threshold=0.15, top_k=5)
-                        
                         if landmark:
-                            print(f"[MAIN] CLIP predicted landmark: {landmark}")
                             st.write(f"🔍 CLIP predicted landmark: **{landmark}**")
-                            
-                            coords_result, source = query_landmark_coords(landmark)
-                            
-                            if coords_result:
-                                lat, lon = coords_result
-                                print(f"[MAIN] Landmark coordinates: {lat}, {lon} (source: {source})")
-                                addr = get_address_from_coords((lat, lon))
-                                if addr and addr not in ("Unknown location", "Invalid coordinates", "Geocoding service unavailable"):
+                            coords_loc, source = query_landmark_coords(landmark)
+                            if coords_loc:
+                                coords_result = coords_loc
+                                method = f"Landmark ({source})"
+                                addr = get_address_from_coords(coords_loc)
+                                if addr not in ("Unknown location", "Geocoding service unavailable"):
                                     location = addr
-                                    method = f"Landmark ({source})"
-                                    print(f"[MAIN] Final location: {location}")
                                 else:
-                                    if landmark in LANDMARK_KEYWORDS:
-                                        landmark_info = LANDMARK_KEYWORDS[landmark]
-                                        location = f"{landmark_info[0]}, {landmark_info[1]}"
+                                    # fallback to keyword info
+                                    info = LANDMARK_KEYWORDS.get(landmark)
+                                    if info:
+                                        location = f"{info[0]}, {info[1]}"
                                     else:
+                                        lat, lon = coords_loc
                                         location = f"{landmark.title()} ({lat:.4f}, {lon:.4f})"
-                                        method = f"Landmark ({source})"
-                                        print(f"[MAIN] Using landmark fallback: {location}")
-                            else:
-                                print(f"[MAIN] No coordinates found for landmark: {landmark}")
-                                st.write(f"⚠️ Landmark detected but no coordinates available")
                         else:
-                            print("[MAIN] No landmark detected with sufficient confidence")
                             st.write("🔍 No landmark detected with sufficient confidence")
+
                 except Exception as e:
                     st.error(f"❌ Something went wrong during processing: {e}")
-                    print(f"[ERROR] {e}")
+                                l
                                    
                 col1, col2 = st.columns([1, 2])
                 with col1:
@@ -176,12 +167,15 @@ def main():
                
 
     with tabs[1]:
-        st.subheader("🗺️ Random Location Sample (Demo)")
-        st.map(pd.DataFrame({
-            'lat': [3.139 + random.uniform(-0.01, 0.01)],
-            'lon': [101.6869 + random.uniform(-0.01, 0.01)]
-        }))
-        st.caption("Note: This location map is a demo preview and not actual detected GPS data.")
+        st.subheader("🗺️ Detected Location Map")
+        if coords_result:
+            lat, lon = coords_result
+            map_df = pd.DataFrame({"lat": [lat], "lon": [lon]})
+            st.map(map_df)
+            st.caption(f"Source: {method}")
+        else:
+            st.info("No detected location to display on map.")
+        
 
     with tabs[2]:
         st.subheader("📜 Upload History")
