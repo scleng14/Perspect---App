@@ -1,6 +1,6 @@
 # location_utils/landmark.py
 import logging
-from typing import Optional  
+from typing import Optional,Tuple  
 import streamlit as st
 import requests
 from transformers import CLIPProcessor, CLIPModel
@@ -84,11 +84,29 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
     Use CLIP model to match the image with a predefined list of landmarks.
     Returns the best matched keyword if confidence > threshold, else None.
     """
+     image_path: str,
+    threshold: float = 0.15,
+    top_k: int = 5
+) -> Optional[str]:
     try:
         image = Image.open(image_path).convert("RGB")
         keywords = list(LANDMARK_KEYWORDS.keys())
 
-        inputs = clip_processor(text=keywords, images=image, return_tensors="pt", padding=True)
+        text_inputs = clip_processor.tokenizer(
+            keywords,
+            padding=True,
+            truncation=True,
+            return_tensors="pt"
+        )
+
+    
+        image_inputs = clip_processor.feature_extractor(
+            images=image,
+            return_tensors="pt"
+        )
+
+        inputs = {**text_inputs, **image_inputs}
+
         with torch.no_grad():
             outputs = clip_model(**inputs)
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
