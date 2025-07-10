@@ -1,5 +1,6 @@
 # location_utils/landmark.py
 import logging
+logger.info(f"Loaded landmark.py from {__file__}")
 from typing import Optional  
 import streamlit as st
 import requests
