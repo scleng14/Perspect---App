@@ -1,4 +1,5 @@
 # location_utils/landmark.py
+import logging
 from typing import Optional  
 import streamlit as st
 import requests
@@ -6,13 +7,17 @@ from transformers import CLIPProcessor, CLIPModel
 from PIL import Image
 import torch
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @st.cache_resource  
 def load_models():
-    print("Loading CLIP model...")  
-    return (
-        CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32"),
-        CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-    )
+    logger.info("Loading CLIP processor and model...")  
+    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    return processor, model
+
 
 clip_processor, clip_model = load_models() 
 
@@ -89,29 +94,24 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
         
         # Get top-k results for debugging
-        idxs = probs.argsort()[::-1][:top_k]
-        print("----- CLIP Top-K Candidates -----")
-        for rank, idx in enumerate(idxs, start=1):
-            name = keywords[idx]
-            score = probs[idx]
-            print(f"{rank:>2}. {name:30s} → {score:.4f}")
-
+        top_idxs = probs.argsort()[::-1][:top_k]
+        for rank, idx in enumerate(top_idxs, start=1):
+            logger.info(f"CLIP rank {rank}: {keywords[idx]} -> {probs[idx]:.4f}")
+           
         best_idx = int(idxs[0])
         best_score = float(probs[best_idx])
         best_name = keywords[best_idx]
         
-        print(f"\n[CLIP DEBUG] Best match: {best_name} (score={best_score:.3f})")
-        
-        # Check if confidence meets threshold
+
         if best_score >= threshold:
-            print(f"[CLIP MATCH] {best_name} ({best_score:.3f})\n")
+            logger.info(f"[CLIP MATCH] {best_name} ({best_score:.3f})\n")
             return best_name.lower()
         else:
-            print(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f}), threshold={threshold}\n")
+            logger.info(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f}), threshold={threshold}\n")
             return None
             
     except Exception as e:
-        print(f"[CLIP ERROR] {e}")
+        logger.info(f"[CLIP ERROR] {e}")
         return None
         
 def query_landmark_coords(landmark_name: str) -> tuple:
@@ -120,8 +120,9 @@ def query_landmark_coords(landmark_name: str) -> tuple:
     Returns (None, error_message) if not found.
     """
     # Check predefined landmarks first
-    if landmark_name.lower() in LANDMARK_KEYWORDS:
-        _, _, lat, lon = LANDMARK_KEYWORDS[landmark_name.lower()]
+    key=landmark_name.lower()
+    if key in LANDMARK_KEYWORDS:
+        _, _, lat, lon = LANDMARK_KEYWORDS[key]
         return (lat, lon), "Predefined"
 
     # Try Overpass API as fallback
@@ -138,13 +139,15 @@ def query_landmark_coords(landmark_name: str) -> tuple:
         response = requests.post(OVERPASS_URL, data=query, timeout=15)
         response.raise_for_status() 
         data = response.json()
-        if data["elements"]:
-            element = data["elements"][0]
-            if "center" in element:
-                return (element["center"]["lat"], element["center"]["lon"]), "Overpass"
-            elif "lat" in element:
-                return (element["lat"], element["lon"]), "Overpass"
+        elements = data.get("elements", [])
+        if elements:
+            elem = elements[0]
+            if "center" in elem:
+                return (elem["center"]["lat"], elem["center"]["lon"]), "Overpass"
+            elif "lat" in elem and "lon" in elem:
+                return (elem["lat"], elem["lon"]), "Overpass"
+
     except Exception as e:
-        print(f"[OVERPASS ERROR] {e}")
+        logger,error(f"[OVERPASS ERROR] {e}")
 
     return None, "No coordinates available"
