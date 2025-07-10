@@ -1,6 +1,7 @@
-import streamlit as st
+import os, streamlit as st
+st.write("🚀 Root files:", os.listdir("."))
 import cv2
-st.write("OpenCV headless version:", cv2.__version__)
+st.write("✅ OpenCV version:", cv2.__version__)
 import numpy as np
 from PIL import Image
 import pandas as pd
