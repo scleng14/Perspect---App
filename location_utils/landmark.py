@@ -1,6 +1,6 @@
 # location_utils/landmark.py
 import logging
-from typing import Optional  
+from typing import Optional，Tuple  
 import streamlit as st
 import requests
 from transformers import CLIPProcessor, CLIPModel
@@ -84,11 +84,16 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
     Use CLIP model to match the image with a predefined list of landmarks.
     Returns the best matched keyword if confidence > threshold, else None.
     """
+    image_path: str,
+    threshold: float = 0.15,
+    top_k: int = 5
+) -> Tuple[Optional[str], Optional[str]]:
     try:
         image = Image.open(image_path).convert("RGB")
-        keywords = [
-            f"a photo of {info[0]} in {info[1]}"
-            for info in LANDMARK_KEYWORDS.values()
+        keys = list(LANDMARK_KEYWORDS.keys())
+        texts = [ 
+            f"a photo of {LANDMARK_KEYWORDS[k][0]} in {LANDMARK_KEYWORDS[k][1]}"
+            for k in keys
         ]
 
         inputs = clip_processor(text=keywords, images=image, return_tensors="pt", padding=True)
@@ -103,54 +108,63 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
            
         best_idx = int(top_idxs[0])
         best_score = float(probs[best_idx])
-        best_name = keywords[best_idx]
+        best_text = texts[best_idx]
+        best_key  = keys[best_idx]
         
 
         if best_score >= threshold:
-            logger.info(f"[CLIP MATCH] {best_name} ({best_score:.3f})\n")
+            logger.info(f"[CLIP MATCH] {best_key} ({best_score:.3f})\n")
             return best_name.lower()
         else:
-            logger.info(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f}), threshold={threshold}\n")
+            logger.info(f"[CLIP LOW CONFIDENCE] best={best_text} ({best_score:.3f}), threshold={threshold}\n")
             return None
             
     except Exception as e:
         logger.info(f"[CLIP ERROR] {e}")
         return None
         
-def query_landmark_coords(landmark_name: str) -> tuple:
+def query_landmark_coords(landmark_name: str) -> Tuple[Optional[Tuple[float, float]], str]:
     """
     Return ((lat, lon), source) if landmark name is found in predefined list or Overpass API.
     Returns (None, error_message) if not found.
     """
     # Check predefined landmarks first
-    key=landmark_name.lower()
+    key = landmark_key.lower().strip()
     if key in LANDMARK_KEYWORDS:
         _, _, lat, lon = LANDMARK_KEYWORDS[key]
         return (lat, lon), "Predefined"
 
     # Try Overpass API as fallback
-    query = f"""
-    [out:json][timeout:25];
+    # 2) Overpass API 作为兜底
+    overpass_query = f"""
+    [out:json][timeout:15];
     (
-      node["name"~"{landmark_name}",i];
-      way["name"~"{landmark_name}",i];
+      node["name"~"{landmark_key}",i];
+      way["name"~"{landmark_key}",i];
     );
-    out center;
+    out center 1;
     """
-
     try:
         response = requests.post(OVERPASS_URL, data=query, timeout=15)
         response.raise_for_status() 
         data = response.json()
-        elements = data.get("elements", [])
-        if elements:
-            elem = elements[0]
-            if "center" in elem:
-                return (elem["center"]["lat"], elem["center"]["lon"]), "Overpass"
-            elif "lat" in elem and "lon" in elem:
-                return (elem["lat"], elem["lon"]), "Overpass"
-
     except Exception as e:
-        logger,error(f"[OVERPASS ERROR] {e}")
+        logger.error(f"[OVERPASS ERROR] 请求失败: {e}")
+        return None, "Overpass API error" 
+        
+    elements = data.get("elements", [])
+    if not elements:
+        return None, "No matching elements"
 
-    return None, "No coordinates available"
+    # 3) 取第一个元素的坐标
+    elem = elements[0]
+    if "center" in elem:
+        lat = elem["center"]["lat"]
+        lon = elem["center"]["lon"]
+    elif "lat" in elem and "lon" in elem:
+        lat = elem["lat"]
+        lon = elem["lon"]
+    else:
+        return None, "No coordinates in response"
+
+    return (lat, lon), "Overpass"
