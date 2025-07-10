@@ -88,7 +88,7 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
         image = Image.open(image_path).convert("RGB")
         keywords = list(LANDMARK_KEYWORDS.keys())
 
-        inputs = clip_processor(text=keywords, images=image, return_tensors="pt")
+        inputs = clip_processor(text=keywords, images=image, return_tensors="pt", padding=True)
         with torch.no_grad():
             outputs = clip_model(**inputs)
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
@@ -148,6 +148,6 @@ def query_landmark_coords(landmark_name: str) -> tuple:
                 return (elem["lat"], elem["lon"]), "Overpass"
 
     except Exception as e:
-        logger,error(f"[OVERPASS ERROR] {e}")
+        logger.error(f"[OVERPASS ERROR] {e}")
 
     return None, "No coordinates available"
