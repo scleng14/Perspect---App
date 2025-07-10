@@ -86,7 +86,10 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
     """
     try:
         image = Image.open(image_path).convert("RGB")
-        keywords = list(LANDMARK_KEYWORDS.keys())
+        keywords = [
+            f"a photo of {info[0]} in {info[1]}"
+            for info in LANDMARK_KEYWORDS.values()
+        ]
 
         inputs = clip_processor(text=keywords, images=image, return_tensors="pt", padding=True)
         with torch.no_grad():
