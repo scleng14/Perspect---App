@@ -84,7 +84,7 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
     Use CLIP model to match the image with a predefined list of landmarks.
     Returns the best matched keyword if confidence > threshold, else None.
     """
-     image_path: str,
+    image_path: str,
     threshold: float = 0.15,
     top_k: int = 5
 ) -> Optional[str]:
