@@ -151,4 +151,3 @@ def query_landmark_coords(landmark_name: str) -> tuple:
         logger,error(f"[OVERPASS ERROR] {e}")
 
     return None, "No coordinates available"
-
