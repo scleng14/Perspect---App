@@ -20,7 +20,6 @@ from location_utils.extract_gps import extract_gps, convert_gps
 from location_utils.geocoder import get_address_from_coords
 from location_utils.landmark import load_models,detect_landmark, query_landmark_coords,LANDMARK_KEYWORDS
 
-
 # ----------------- App Configuration -----------------
 st.set_page_config(
     page_title="AI Emotion & Location Detector",
@@ -34,20 +33,23 @@ def get_detector():
     return EmotionDetector()
 
 detector = get_detector()
+
 # Load CLIP models once
-device = load_models()
+processor, clip_model = load_models()
+
 
 def save_history(username, emotion, confidence, location):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    df = pd.DataFrame([[username, emotion, confidence, location, now]], 
-                     columns=["Username","Emotion","Confidence","Location","timestamp"])
+    df = pd.DataFrame([[username, emotion, confidence, location, now]],
+                      columns=["Username", "Emotion", "Confidence", "Location", "timestamp"])
     try:
         if os.path.exists("history.csv"):
             prev = pd.read_csv("history.csv")
-            df = pd.concat([prev, df])
+            df = pd.concat([prev, df], ignore_index=True)
         df.to_csv("history.csv", index=False)
     except Exception as e:
         st.error(f"Failed to save history: {e}")
+
 
 def show_detection_guide():
     with st.expander("ℹ️ How Emotion Detection Works", expanded=False):
@@ -67,6 +69,7 @@ def show_detection_guide():
         - Avoid obstructed faces
         """)
 
+
 def sidebar_design(username):
     if username:
         st.sidebar.success(f"👤 Logged in as: {username}")
@@ -77,46 +80,54 @@ def sidebar_design(username):
     st.sidebar.markdown("- Visualize your emotion distribution")
     st.sidebar.divider()
     st.sidebar.info("Enhance your experience by ensuring clear, well-lit facial images.")
-  
+
+
 def main():
     st.title("👁‍🗨 AI Emotion & Location Detector")
     st.caption("Upload a photo to detect facial emotions and estimate location.")
-    # prepare for sharing location across tabs
+
+    # Initialize variables for sharing across tabs
     coords_result = None
     method = ""
-    tabs = st.tabs(["🏠 Home", "🗺️ Location Map", "📜 Upload History", "📊 Emotion Analysis Chart"])
 
+    tabs = st.tabs([
+        "🏠 Home",
+        "🗺️ Detected Map",
+        "📜 Upload History",
+        "📊 Emotion Analysis Chart"
+    ])
+
+    # Tab 0: Home / Detection
     with tabs[0]:
         username = st.text_input("👤 Enter your username")
         sidebar_design(username)
+    
         if username:
             uploaded_file = st.file_uploader("Upload an image (JPG/PNG)", type=["jpg", "png"])
             if uploaded_file:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
                     tmp_file.write(uploaded_file.read())
                     temp_path = tmp_file.name
-               
+
                 try:
                     image = Image.open(temp_path).convert("RGB")
                     img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
                     detections = detector.detect_emotions(img)
                     detected_img = detector.draw_detections(img, detections)
-                        
+
                     location = "Unknown"
                     method = ""
+
+                    # 1) Try EXIF GPS
                     gps_info = extract_gps(temp_path)
-                
                     if gps_info:
-                        print(f"[MAIN] GPS extraction successful: {list(gps_info.keys())}")
                         coords = convert_gps(gps_info)
-   
                         if coords:
-                            print(f"[MAIN] GPS coordinates: {coords}")
                             coords_result = coords
                             location = get_address_from_coords(coords)
-                            method="GPS Metadata"
-                       
-                    # Fallback to CLIP landmark
+                            method = "GPS Metadata"
+
+                    # 2) Fallback to CLIP landmark
                     if coords_result is None:
                         landmark = detect_landmark(temp_path, threshold=0.15, top_k=5)
                         if landmark:
@@ -126,10 +137,12 @@ def main():
                                 coords_result = coords_loc
                                 method = f"Landmark ({source})"
                                 addr = get_address_from_coords(coords_loc)
-                                if addr not in ("Unknown location", "Geocoding service unavailable"):
+                                if addr not in (
+                                    "Unknown location",
+                                    "Geocoding service unavailable"
+                                ):  # Valid address
                                     location = addr
                                 else:
-                                    # fallback to keyword info
                                     info = LANDMARK_KEYWORDS.get(landmark)
                                     if info:
                                         location = f"{info[0]}, {info[1]}"
@@ -141,8 +154,8 @@ def main():
 
                 except Exception as e:
                     st.error(f"❌ Something went wrong during processing: {e}")
-                                l
-                                   
+
+                # Display detection results
                 col1, col2 = st.columns([1, 2])
                 with col1:
                     st.subheader("🔍 Detection Results")
@@ -151,21 +164,36 @@ def main():
                         confidences = [d["confidence"] for d in detections]
                         st.success(f"🎭 {len(detections)} face(s) detected")
                         for i, (emo, conf) in enumerate(zip(emotions, confidences)):
-                            st.write(f"- Face {i + 1}: {emo} ({conf}%)")
+                            st.write(f"- Face {i+1}: {emo} ({conf}%)")
                         show_detection_guide()
-                        st.write(f"📍 Estimated Location: **{location}** ({method})")
-                        save_history(username, emotions[0], confidences[0], location)
+                        st.write(
+                            f"📍 Estimated Location: **{location}** ({method})"
+                        )
+                        save_history(
+                            username,
+                            emotions[0],
+                            confidences[0],
+                            location
+                        )
                     else:
                         st.warning("No faces were detected in the uploaded image.")
-                with col2:
-                    t1, t2 = st.tabs(["Original Image", "Processed Image"])
-                    with t1:
-                         st.image(image, use_container_width=True)
-                    with t2:
-                        st.image(detected_img, channels="BGR", use_container_width=True,
-                                    caption=f"Detected {len(detections)} face(s)")
-               
 
+                with col2:
+                    tab_o, tab_p = st.tabs([
+                        "Original Image",
+                        "Processed Image"
+                    ])
+                    with tab_o:
+                        st.image(image, use_container_width=True)
+                    with tab_p:
+                        st.image(
+                            detected_img,
+                            channels="BGR",
+                            use_container_width=True,
+                            caption=f"Detected {len(detections)} face(s)"
+                        )
+
+    # Tab 1: Detected Map
     with tabs[1]:
         st.subheader("🗺️ Detected Location Map")
         if coords_result:
@@ -175,48 +203,63 @@ def main():
             st.caption(f"Source: {method}")
         else:
             st.info("No detected location to display on map.")
-        
 
+    # Tab 2: Upload History
     with tabs[2]:
         st.subheader("📜 Upload History")
         if username:
-            try:
-                if os.path.exists("history.csv"):
-                    df = pd.read_csv("history.csv")
-                    if df.empty:
-                        st.info("No upload records found.")
-                    else:
-                        df_filtered = df[df["Username"].str.contains(username, case=False)]
-                        df_filtered = df_filtered.sort_values("timestamp", ascending=False).reset_index(drop=True)
-                        df_filtered.index = range(1, len(df_filtered)+1)
-                        st.dataframe(df_filtered)
-                        st.caption(f"Total records found for {username}: {len(df_filtered)}")
+            if os.path.exists("history.csv"):
+                df = pd.read_csv("history.csv")
+                df_filtered = df[
+                    df["Username"].str.contains(username, case=False)
+                ]
+                if not df_filtered.empty:
+                    df_filtered = (
+                        df_filtered
+                        .sort_values("timestamp", ascending=False)
+                        .reset_index(drop=True)
+                    )
+                    df_filtered.index = range(1, len(df_filtered) + 1)
+                    st.dataframe(df_filtered)
+                    st.caption(
+                        f"Total records found for {username}: {len(df_filtered)}"
+                    )
                 else:
-                    st.info("No history file found.")
-            except:
-                st.warning("Error loading history records.")
+                    st.info("No upload records found.")
+            else:
+                st.info("No history file found.")
         else:
             st.warning("Please enter your username to view your upload history.")
 
+    # Tab 3: Emotion Analysis Chart
     with tabs[3]:
         st.subheader("📊 Emotion Analysis Chart")
         if username:
-            try:
-                if os.path.exists("history.csv"):
-                    df = pd.read_csv("history.csv")
-                    df_filtered = df[df["Username"].str.contains(username, case=False)]
-                    if not df_filtered.empty:
-                        fig = px.pie(df_filtered, names="Emotion", title=f"Emotion Distribution for {username}")
-                        st.plotly_chart(fig)
-                        st.caption("Chart is based on your personal upload history.")
-                    else:
-                        st.info("No emotion records found for this username.")
+            if os.path.exists("history.csv"):
+                df = pd.read_csv("history.csv")
+                df_filtered = df[
+                    df["Username"].str.contains(username, case=False)
+                ]
+                if not df_filtered.empty:
+                    fig = px.pie(
+                        df_filtered,
+                        names="Emotion",
+                        title=f"Emotion Distribution for {username}"
+                    )
+                    st.plotly_chart(fig)
+                    st.caption(
+                        "Chart is based on your personal upload history."
+                    )
                 else:
-                    st.info("History file not found.")
-            except Exception as e:
-                st.error(f"Error generating chart: {e}")
+                    st.info("No emotion records found for this username.")
+            else:
+                st.info("History file not found.")
         else:
-            st.warning("Please enter your username to generate your emotion chart.")
+            st.warning(
+                "Please enter your username to generate your emotion chart."
+            )
+
 
 if __name__ == "__main__":
     main()
+
