@@ -1,7 +1,12 @@
 import os, streamlit as st
 st.write("🚀 Root files:", os.listdir("."))
+import sys, subprocess
+st.write("📦 Installed packages:")
+freeze = subprocess.check_output([sys.executable, "-m", "pip", "freeze"]).decode().splitlines()
+cv_pkgs = [p for p in freeze if "opencv" in p.lower()]
+st.write(cv_pkgs)
 import cv2
-st.write("✅ OpenCV version:", cv2.__version__)
+st.write("✅ cv2 loaded, version:", cv2.__version__)
 import numpy as np
 from PIL import Image
 import pandas as pd
