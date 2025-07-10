@@ -1,6 +1,6 @@
 # location_utils/landmark.py
 import logging
-from typing import Optional, Tuple, Union  
+from typing import Optional, Tuple, Union
 import streamlit as st
 import requests
 from transformers import CLIPProcessor, CLIPModel
@@ -11,15 +11,14 @@ import torch
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@st.cache_resource  
-def load_models():
-    logger.info("Loading CLIP processor and model...")  
+@st.cache_resource
+def load_models() -> Tuple[CLIPProcessor, CLIPModel]:
+    logger.info("Loading CLIP processor and model...")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     return processor, model
 
-
-clip_processor, clip_model = load_models() 
+clip_processor, clip_model = load_models()
 
 # Predefined landmarks with name, city, latitude, longitude
 LANDMARK_KEYWORDS = {
@@ -84,43 +83,34 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
     Use CLIP model to match the image with a predefined list of landmarks.
     Returns the best matched keyword if confidence > threshold, else None.
     """
-    image_path: str,
-    threshold: float = 0.15,
-    top_k: int = 5
-) -> Tuple[Optional[str], Optional[str]]:
     try:
         image = Image.open(image_path).convert("RGB")
-        keys = list(LANDMARK_KEYWORDS.keys())
-        texts = [ 
-            f"a photo of {LANDMARK_KEYWORDS[k][0]} in {LANDMARK_KEYWORDS[k][1]}"
-            for k in keys
-        ]
+        keywords = list(LANDMARK_KEYWORDS.keys())
 
         inputs = clip_processor(text=keywords, images=image, return_tensors="pt", padding=True)
         with torch.no_grad():
             outputs = clip_model(**inputs)
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
-        
+
         # Get top-k results for debugging
         top_idxs = probs.argsort()[::-1][:top_k]
         for rank, idx in enumerate(top_idxs, start=1):
             logger.info(f"CLIP rank {rank}: {keywords[idx]} -> {probs[idx]:.4f}")
-           
+
+        # 取概率最高的那个
         best_idx = int(top_idxs[0])
         best_score = float(probs[best_idx])
-        best_text = texts[best_idx]
-        best_key  = keys[best_idx]
-        
+        best_name = keywords[best_idx]
 
         if best_score >= threshold:
-            logger.info(f"[CLIP MATCH] {best_key} ({best_score:.3f})\n")
+            logger.info(f"[CLIP MATCH] {best_name} ({best_score:.3f})")
             return best_name.lower()
         else:
-            logger.info(f"[CLIP LOW CONFIDENCE] best={best_text} ({best_score:.3f}), threshold={threshold}\n")
+            logger.info(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f}), threshold={threshold}")
             return None
-            
+
     except Exception as e:
-        logger.info(f"[CLIP ERROR] {e}")
+        logger.error(f"[CLIP ERROR] {e}")
         return None
         
 def query_landmark_coords(landmark_name: str) -> Tuple[Optional[Tuple[float, float]], str]:
