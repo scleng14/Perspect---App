@@ -1,6 +1,6 @@
 # location_utils/landmark.py
 import logging
-from typing import Optional，Tuple，Union  
+from typing import Optional，Tuple, Union  
 import streamlit as st
 import requests
 from transformers import CLIPProcessor, CLIPModel
