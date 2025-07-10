@@ -1,6 +1,6 @@
 # location_utils/landmark.py
 import logging
-from typing import Optional，Tuple  
+from typing import Optional，Tuple，Union  
 import streamlit as st
 import requests
 from transformers import CLIPProcessor, CLIPModel
@@ -129,42 +129,44 @@ def query_landmark_coords(landmark_name: str) -> Tuple[Optional[Tuple[float, flo
     Returns (None, error_message) if not found.
     """
     # Check predefined landmarks first
-    key = landmark_key.lower().strip()
-    if key in LANDMARK_KEYWORDS:
-        _, _, lat, lon = LANDMARK_KEYWORDS[key]
-        return (lat, lon), "Predefined"
+    key = landmark_key.lower()
+    if "photo of " in key and " in " in key:
+        # 提取 "a photo of X in Y" 里的 X
+        key = key.split("photo of ", 1)[1].split(" in ", 1)[0].strip()
 
+    # 1) 尝试预定义坐标
+    if key in LANDMARK_KEYWORDS:
+        name, city, lat, lon = LANDMARK_KEYWORDS[key]
+        logger.info(f"[Predefined] {name} @ {city} → ({lat}, {lon})")
+        return (lat, lon), "Predefined"
     # Try Overpass API as fallback
     # 2) Overpass API 作为兜底
-    overpass_query = f"""
+    query = f"""
     [out:json][timeout:15];
     (
       node["name"~"{landmark_key}",i];
       way["name"~"{landmark_key}",i];
+      relation["name"~"{key}",i];
     );
     out center 1;
     """
     try:
-        response = requests.post(OVERPASS_URL, data=query, timeout=15)
-        response.raise_for_status() 
-        data = response.json()
+        resp = requests.post(OVERPASS_URL, data=query, timeout=15)
+        resp.raise_for_status() 
+        data = resp.json()
+        elems = data.get("elements", [])
+        if elems:
+            elem = elems[0]
+            if "center" in elem:
+                lat, lon = elem["center"]["lat"], elem["center"]["lon"]
+            else:
+                lat, lon = elem.get("lat"), elem.get("lon")
+            if lat is not None and lon is not None:
+                logger.info(f"[Overpass] {key} → ({lat}, {lon})")
+                return (lat, lon), "Overpass"
     except Exception as e:
         logger.error(f"[OVERPASS ERROR] 请求失败: {e}")
         return None, "Overpass API error" 
         
-    elements = data.get("elements", [])
-    if not elements:
-        return None, "No matching elements"
-
-    # 3) 取第一个元素的坐标
-    elem = elements[0]
-    if "center" in elem:
-        lat = elem["center"]["lat"]
-        lon = elem["center"]["lon"]
-    elif "lat" in elem and "lon" in elem:
-        lat = elem["lat"]
-        lon = elem["lon"]
-    else:
-        return None, "No coordinates in response"
-
-    return (lat, lon), "Overpass"
+    logger.warning(f"[No coordinates] for landmark '{landmark_key}'")
+    return None, "No coordinates available"
