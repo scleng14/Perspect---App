@@ -61,6 +61,8 @@ LANDMARK_KEYWORDS = {
     "big ben": ["Big Ben", "London", 51.5007, -0.1246],
     "louvre": ["Louvre Museum", "Paris", 48.8606, 2.3376],
     "sagrada familia": ["Sagrada Família", "Barcelona", 41.4036, 2.1744],
+    "leaning tower of pisa": ["Leaning Tower of Pisa", "Pisa", 43.7230, 10.3966],
+    "piazza dei miracoli":    ["Piazza dei Miracoli",    "Pisa", 43.7230, 10.3966],
 
     # America
     "golden gate bridge": ["Golden Gate Bridge", "San Francisco", 37.8199, -122.4783],
