@@ -1,6 +1,6 @@
 # location_utils/landmark.py
 import logging
-from typing import Optional, Tuple, Union
+from typing import Optional  
 import streamlit as st
 import requests
 from transformers import CLIPProcessor, CLIPModel
@@ -11,14 +11,15 @@ import torch
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@st.cache_resource
-def load_models() -> Tuple[CLIPProcessor, CLIPModel]:
-    logger.info("Loading CLIP processor and model...")
+@st.cache_resource  
+def load_models():
+    logger.info("Loading CLIP processor and model...")  
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     return processor, model
 
-clip_processor, clip_model = load_models()
+
+clip_processor, clip_model = load_models() 
 
 # Predefined landmarks with name, city, latitude, longitude
 LANDMARK_KEYWORDS = {
@@ -91,74 +92,63 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
         with torch.no_grad():
             outputs = clip_model(**inputs)
             probs = outputs.logits_per_image.softmax(dim=1).cpu().numpy().flatten()
-
+        
         # Get top-k results for debugging
         top_idxs = probs.argsort()[::-1][:top_k]
         for rank, idx in enumerate(top_idxs, start=1):
             logger.info(f"CLIP rank {rank}: {keywords[idx]} -> {probs[idx]:.4f}")
-
-        # 取概率最高的那个
+           
         best_idx = int(top_idxs[0])
         best_score = float(probs[best_idx])
         best_name = keywords[best_idx]
+        
 
         if best_score >= threshold:
-            logger.info(f"[CLIP MATCH] {best_name} ({best_score:.3f})")
+            logger.info(f"[CLIP MATCH] {best_name} ({best_score:.3f})\n")
             return best_name.lower()
         else:
-            logger.info(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f}), threshold={threshold}")
+            logger.info(f"[CLIP LOW CONFIDENCE] best={best_name} ({best_score:.3f}), threshold={threshold}\n")
             return None
-
+            
     except Exception as e:
-        logger.error(f"[CLIP ERROR] {e}")
+        logger.info(f"[CLIP ERROR] {e}")
         return None
         
-def query_landmark_coords(landmark_key: str) -> Tuple[Optional[Tuple[float, float]], str]:
+def query_landmark_coords(landmark_name: str) -> tuple:
     """
-    给定 CLIP 返回的小写 landmark_key，
-    先在预定义字典中查坐标，否则调用 Overpass API。
-    返回 ((lat, lon), "Predefined"/"Overpass")，
-    找不到时返回 (None, "No coordinates available")。
+    Return ((lat, lon), source) if landmark name is found in predefined list or Overpass API.
+    Returns (None, error_message) if not found.
     """
-    key = landmark_key.lower()
-
-    # 如果是 “a photo of X in Y” 这种提示词，提取出 “X”
-    if "photo of " in key and " in " in key:
-        key = key.split("photo of ", 1)[1].split(" in ", 1)[0].strip()
-
-    # 1) 预定义字典优先
+    # Check predefined landmarks first
+    key=landmark_name.lower()
     if key in LANDMARK_KEYWORDS:
-        name, city, lat, lon = LANDMARK_KEYWORDS[key]
-        logger.info(f"[Predefined] {name} @ {city} → ({lat}, {lon})")
+        _, _, lat, lon = LANDMARK_KEYWORDS[key]
         return (lat, lon), "Predefined"
 
-    # 2) Overpass API 兜底
+    # Try Overpass API as fallback
     query = f"""
-    [out:json][timeout:15];
+    [out:json][timeout:25];
     (
-      node["name"~"{key}",i];
-      way["name"~"{key}",i];
-      relation["name"~"{key}",i];
+      node["name"~"{landmark_name}",i];
+      way["name"~"{landmark_name}",i];
     );
     out center;
     """
-    try:
-        resp = requests.post(OVERPASS_URL, data=query, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
-        elems = data.get("elements", [])
-        if elems:
-            elem = elems[0]
-            if "center" in elem:
-                lat, lon = elem["center"]["lat"], elem["center"]["lon"]
-            else:
-                lat, lon = elem.get("lat"), elem.get("lon")
-            if lat is not None and lon is not None:
-                logger.info(f"[Overpass] {key} → ({lat}, {lon})")
-                return (lat, lon), "Overpass"
-    except Exception as e:
-        logger.error(f"[OVERPASS ERROR] 请求失败: {e}")
-        return None, "Overpass API error"
 
-    logger.warning(f"[No coordinates] for landmark '{key}'")
+    try:
+        response = requests.post(OVERPASS_URL, data=query, timeout=15)
+        response.raise_for_status() 
+        data = response.json()
+        elements = data.get("elements", [])
+        if elements:
+            elem = elements[0]
+            if "center" in elem:
+                return (elem["center"]["lat"], elem["center"]["lon"]), "Overpass"
+            elif "lat" in elem and "lon" in elem:
+                return (elem["lat"], elem["lon"]), "Overpass"
+
+    except Exception as e:
+        logger,error(f"[OVERPASS ERROR] {e}")
+
     return None, "No coordinates available"
+
