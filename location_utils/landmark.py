@@ -98,7 +98,7 @@ def detect_landmark(image_path: str, threshold: float = 0.15, top_k: int = 5) ->
         for rank, idx in enumerate(top_idxs, start=1):
             logger.info(f"CLIP rank {rank}: {keywords[idx]} -> {probs[idx]:.4f}")
            
-        best_idx = int(idxs[0])
+        best_idx = int(top_idxs[0])
         best_score = float(probs[best_idx])
         best_name = keywords[best_idx]
         
