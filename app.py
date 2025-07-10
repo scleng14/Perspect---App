@@ -1,5 +1,6 @@
 import streamlit as st
 import cv2
+st.write("OpenCV headless version:", cv2.__version__)
 import numpy as np
 from PIL import Image
 import pandas as pd
