@@ -12,7 +12,7 @@ def extract_gps(image_path):
     try:
        
         image = Image.open(image_path)
-        exif = image._getexif() or {}
+        exif = image.getexif() or {}
         if not exif:
             logger.info("[EXIF] No EXIF data found")
             return None
