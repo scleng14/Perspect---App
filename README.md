@@ -1,4 +1,4 @@
-LeadFocal: Emotion & Location Recognition System ================================================= 
+Perspect: Emotion & Location Recognition System ================================================= 
 
 Overview: 
 --------- 
